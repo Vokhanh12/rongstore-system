@@ -1,0 +1,10 @@
+client/build/
+client/build/
+client/ios/Pods/
+client/.dart_tools
+client/windows
+client/macos
+client/android
+client/ios
+client/web
+client/linux

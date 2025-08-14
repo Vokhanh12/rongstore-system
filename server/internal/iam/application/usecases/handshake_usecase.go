@@ -8,9 +8,9 @@ import (
 	"encoding/base64"
 	"time"
 
-	"myapp/internal/iam/application/commands"
-	"myapp/internal/iam/domain"
-	"myapp/pkg/crypto"
+	"server/internal/iam/application/commands"
+	"server/internal/iam/domain"
+	"server/pkg/crypto"
 )
 
 type HandshakeUsecase struct {

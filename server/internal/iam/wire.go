@@ -4,22 +4,22 @@
 package wire
 
 import (
-	"myapp/internal/iam/application/usecases"
-	"myapp/internal/iam/infrastructure/repositories"
-	"myapp/internal/iam/interface/grpc"
-	"myapp/pkg/config"
+	"server/internal/iam/application/usecases"
+	"server/internal/iam/infrastructure/repositories"
+	"server/internal/iam/interface/grpc"
+	"server/pkg/config"
 
 	"github.com/google/wire"
 )
 
-func InitializeUserHandler() (*grpc.UserHandler, error) {
+func InitializeIamHandler() (*grpc.IamHandler, error) {
 	wire.Build(
 		config.Load,
 		config.NewGormDB,
 		repositories.NewGormRepository,
 		usecases.NewLoginUserUsecase,
 		usecases.NewHandshakeUsecase,
-		grpc.NewUserHandler,
+		grpc.NewIamHandler,
 	)
-	return &grpc.UserHandler{}, nil
+	return &grpc.IamHandler{}, nil
 }

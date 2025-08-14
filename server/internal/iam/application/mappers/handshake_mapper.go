@@ -1,20 +1,19 @@
 package mappers
 
 import (
-	"myapp/internal/iam/application/commands"
-	"myapp/internal/iam/application/dtos"
+	iamv1 "server/api/iam/v1"
+	"server/internal/iam/application/commands"
 )
 
-func MapHandshakeRequestToCommand(dto dtos.HandshakeRequestDTO) commands.HandshakeCommand {
+func MapHandshakeRequestToCommand(req *iamv1.HandshakeRequest) commands.HandshakeCommand {
 	return commands.HandshakeCommand{
-		ClientPublicKey: dto.ClientPublicKey,
+		ClientPublicKey: req.ClientPublicKey,
 	}
 }
 
-func MapHandshakeResultToResponseDTO(result *commands.HandshakeResult) dtos.HandshakeResponseDTO {
-	return dtos.HandshakeResponseDTO{
+func MapHandshakeResultToResponseDTO(result *commands.HandshakeResult) iamv1.HandshakeResponse {
+	return iamv1.HandshakeResponse{
 		ServerPublicKey:      result.ServerPublicKey,
 		EncryptedSessionData: result.EncryptedSessionData,
-		SessionID:            result.SessionID,
 	}
 }

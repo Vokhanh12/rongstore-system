@@ -4,7 +4,7 @@ package repositories
 import (
 	"context"
 
-	"myapp/internal/iam/domain"
+	"server/internal/iam/domain"
 
 	"gorm.io/gorm"
 )

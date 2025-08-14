@@ -1,19 +1,19 @@
 package mappers
 
 import (
-	"myapp/internal/iam/application/commands"
-	"myapp/internal/iam/application/dtos"
+	iamv1 "server/api/iam/v1"
+	"server/internal/iam/application/commands"
 )
 
-func MapLoginRequestToCommand(dto dtos.LoginRequestDTO) commands.LoginCommand {
+func MapLoginRequestToCommand(req *iamv1.LoginRequest) commands.LoginCommand {
 	return commands.LoginCommand{
-		Email:    dto.Email,
-		Password: dto.Password,
+		Email:    req.Email,
+		Password: req.Password,
 	}
 }
 
-func MapLoginResultToResponseDTO(result *commands.LoginResult) dtos.LoginResponseDTO {
-	return dtos.LoginResponseDTO{
+func MapLoginResultToResponseDTO(result *commands.LoginResult) iamv1.LoginResponse {
+	return iamv1.LoginResponse{
 		AccessToken:  result.AccessToken,
 		RefreshToken: result.RefreshToken,
 	}

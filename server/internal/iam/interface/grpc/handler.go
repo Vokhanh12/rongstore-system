@@ -3,38 +3,33 @@ package grpc
 import (
 	"context"
 
-	userv1 "myapp/api/user/v1"
-	"myapp/internal/iam/application/dtos"
-	"myapp/internal/iam/application/mappers"
-	"myapp/internal/iam/application/usecases"
+	iamv1 "server/api/iam/v1"
+	"server/internal/iam/application/mappers"
+	"server/internal/iam/application/usecases"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-type UserHandler struct {
-	userv1.UnimplementedUserServiceServer
+type IamHandler struct {
+	iamv1.UnimplementedIamServiceServer
 	loginUsecase     *usecases.LoginUserUsecase
 	handshakeUsecase *usecases.HandshakeUsecase
 }
 
-func NewUserHandler(
+func NewIamHandler(
 	loginUsecase *usecases.LoginUserUsecase,
 	handshakeUsecase *usecases.HandshakeUsecase,
-) *UserHandler {
-	return &UserHandler{
+) *IamHandler {
+	return &IamHandler{
 		loginUsecase:     loginUsecase,
 		handshakeUsecase: handshakeUsecase,
 	}
 }
 
-func (h *UserHandler) Login(ctx context.Context, req *userv1.LoginRequest) (*userv1.LoginResponse, error) {
-	dto := dtos.LoginRequestDTO{
-		Email:    req.GetEmail(),
-		Password: req.GetPassword(),
-	}
+func (h *IamHandler) Login(ctx context.Context, req *iamv1.LoginRequest) (*iamv1.LoginResponse, error) {
 
-	cmd := mappers.MapLoginRequestToCommand(dto)
+	cmd := mappers.MapLoginRequestToCommand(req)
 
 	result, err := h.loginUsecase.Execute(ctx, cmd)
 	if err != nil {
@@ -42,18 +37,15 @@ func (h *UserHandler) Login(ctx context.Context, req *userv1.LoginRequest) (*use
 	}
 
 	resDTO := mappers.MapLoginResultToResponseDTO(result)
-	return &userv1.LoginResponse{
+	return &iamv1.LoginResponse{
 		AccessToken:  resDTO.AccessToken,
 		RefreshToken: resDTO.RefreshToken,
 	}, nil
 }
 
-func (h *UserHandler) Handshake(ctx context.Context, req *userv1.HandshakeRequest) (*userv1.HandshakeResponse, error) {
-	dto := dtos.HandshakeRequestDTO{
-		ClientPublicKey: req.ClientPublicKey,
-	}
+func (h *IamHandler) Handshake(ctx context.Context, req *iamv1.HandshakeRequest) (*iamv1.HandshakeResponse, error) {
 
-	cmd := mappers.MapHandshakeRequestToCommand(dto)
+	cmd := mappers.MapHandshakeRequestToCommand(req)
 
 	result, err := h.handshakeUsecase.Execute(ctx, cmd)
 	if err != nil {
@@ -61,9 +53,8 @@ func (h *UserHandler) Handshake(ctx context.Context, req *userv1.HandshakeReques
 	}
 
 	resDTO := mappers.MapHandshakeResultToResponseDTO(result)
-	return &userv1.HandshakeResponse{
+	return &iamv1.HandshakeResponse{
 		ServerPublicKey:      resDTO.ServerPublicKey,
 		EncryptedSessionData: resDTO.EncryptedSessionData,
-		SessionId:            resDTO.SessionID,
 	}, nil
 }

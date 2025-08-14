@@ -2,8 +2,8 @@ package usecases
 
 import (
 	"context"
-	"myapp/internal/iam/application/commands"
-	"myapp/internal/iam/domain"
+	"server/internal/iam/application/commands"
+	"server/internal/iam/domain"
 )
 
 type LoginUserUsecase struct {

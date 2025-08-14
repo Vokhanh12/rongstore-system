@@ -2,7 +2,7 @@ package queries
 
 import (
 	"context"
-	"myapp/internal/iam/domain"
+	"server/internal/iam/domain"
 )
 
 type GetUserByEmailQuery struct {

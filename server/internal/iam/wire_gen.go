@@ -7,15 +7,15 @@
 package wire
 
 import (
-	"myapp/internal/iam/application/usecases"
-	"myapp/internal/iam/infrastructure/repositories"
-	"myapp/internal/iam/interface/grpc"
-	"myapp/pkg/config"
+	"server/internal/iam/application/usecases"
+	"server/internal/iam/infrastructure/repositories"
+	"server/internal/iam/interface/grpc"
+	"server/pkg/config"
 )
 
 // Injectors from wire.go:
 
-func InitializeUserHandler() (*grpc.UserHandler, error) {
+func InitializeIamHandler() (*grpc.IamHandler, error) {
 	configConfig := config.Load()
 	db, err := config.NewGormDB(configConfig)
 	if err != nil {
@@ -24,6 +24,6 @@ func InitializeUserHandler() (*grpc.UserHandler, error) {
 	userRepository := repositories.NewGormRepository(db)
 	loginUserUsecase := usecases.NewLoginUserUsecase(userRepository)
 	handshakeUsecase := usecases.NewHandshakeUsecase(userRepository)
-	userHandler := grpc.NewUserHandler(loginUserUsecase, handshakeUsecase)
-	return userHandler, nil
+	iamHandler := grpc.NewIamHandler(loginUserUsecase, handshakeUsecase)
+	return iamHandler, nil
 }
