@@ -7,8 +7,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	userpb "myapp/api/user/v1"
-	iam_di "myapp/internal/iam"
+	iampb "server/api/iam/v1"
+	iam_di "server/internal/iam"
 )
 
 func main() {
@@ -20,9 +20,12 @@ func main() {
 	s := grpc.NewServer()
 	reflection.Register(s)
 
-	userService, err := iam_di.InitializeUserHandler()
+	iamService, err := iam_di.InitializeIamHandler()
+	if err != nil {
+		log.Fatalf("failed to initialize IAM handler: %v", err)
+	}
 
-	userpb.RegisterUserServiceServer(s, userService)
+	iampb.RegisterIamServiceServer(s, iamService)
 
 	log.Println("gRPC server started on :50051")
 	if err := s.Serve(lis); err != nil {
