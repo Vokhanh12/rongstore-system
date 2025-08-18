@@ -67,7 +67,7 @@ void main() async {
   await dbHelper.saveTranlationLocal(tranlations_7);
   await dbHelper.saveTranlationLocal(tranlations_8);
 
-  print("test");
+  print("public key:", getPublicKey())
 
   var test = await dbHelper.getAllTranslationsLocal();
   print(test);
