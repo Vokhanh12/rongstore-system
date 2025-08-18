@@ -27,6 +27,16 @@ func NewBusinessError(key, message string, data map[string]interface{}) *Busines
 	}
 }
 
+func (e *BusinessError) MessageOr(fallback string) string {
+	if e == nil {
+		return fallback
+	}
+	if e.Message == "" {
+		return fallback
+	}
+	return e.Message
+}
+
 // --- Domain keys (const) ---
 // Thêm các key ở đây; dùng chúng trong usecase để trả lỗi domain.
 // Nếu cần thêm lỗi khác, bổ sung vào danh sách này.

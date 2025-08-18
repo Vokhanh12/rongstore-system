@@ -14,10 +14,10 @@ grpc → dto → mapper → command → handler → response dto → grpc
 // gen descriptor.pb
 protoc \
   -I./proto \
-  -I./third_party/googleapis \
+  -I./proto/google \
   --include_imports \
   --include_source_info \
-  --descriptor_set_out=envoy/all_services_descriptor.pb \
+  --descriptor_set_out=../server/envoy/all_services_descriptor.pb \
   $(find ./proto -name "*.proto")
 
 // check descriptor

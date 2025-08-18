@@ -25,9 +25,9 @@ static_resources:
                   - name: envoy.filters.http.grpc_json_transcoder
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_json_transcoder.v3.GrpcJsonTranscoder
-                      proto_descriptor: "/Users/vokhanh12/Development/custom-encrypted-communication-over-https/server/envoy/all_services_descriptor.pb"
+                      proto_descriptor: "/Users/vokhanh12/Development/rongstore-system/server/envoy/all_services_descriptor.pb"
                       services: 
-                        - user.v1.UserService
+                        - iam.v1.IamService
                       print_options:
                         add_whitespace: true
                         always_print_enums_as_ints: false
@@ -35,6 +35,7 @@ static_resources:
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                      start_child_span: true  # optional, tạo trace span
 
   clusters:
     - name: service_1
