@@ -4,8 +4,8 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:rongchoi_application/core/constants/constants.dart';
-import 'package:rongchoi_application/features/domain/entities/tranlations_entity.dart';
-import 'package:rongchoi_application/features/domain/usecases/tranlation_usecases/get_all_tranlations_local_usecase.dart';
+import 'package:rongchoi_application/features/iam/domain/entities/tranlations_entity.dart';
+import 'package:rongchoi_application/features/iam/domain/usecases/tranlation_usecases/get_all_tranlations_local_usecase.dart';
 
 part 'tranlation_state.dart';
 part 'tranlation_event.dart';

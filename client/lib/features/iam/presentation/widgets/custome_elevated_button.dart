@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rongchoi_application/features/presentation/widgets/custom_text.dart';
+import 'package:rongchoi_application/features/iam/presentation/widgets/custom_text.dart';
 
 class CustomeElevatedButton extends StatelessWidget {
   final String text;

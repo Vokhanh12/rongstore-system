@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rongchoi_application/core/error/exception.dart';
-import 'package:rongchoi_application/features/presentation/screen/login.dart';
-import 'package:rongchoi_application/features/presentation/screen/splash.dart';
-
+import 'package:rongchoi_application/features/iam/presentation/screen/login.dart';
+import 'package:rongchoi_application/features/iam/presentation/screen/splash.dart';
 
 sealed class AppRouter {
   static const String splash = '/';

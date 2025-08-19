@@ -1,10 +1,10 @@
 import 'package:get_it/get_it.dart';
-import 'package:rongchoi_application/features/data/datasources/db/database_helper.dart';
-import 'package:rongchoi_application/features/data/datasources/local/tranlation_local_datasource.dart';
-import 'package:rongchoi_application/features/data/repositories/tranlation_repository_impl.dart';
-import 'package:rongchoi_application/features/domain/repositories/tranlation_repository.dart';
-import 'package:rongchoi_application/features/domain/usecases/tranlation_usecases/get_all_tranlations_local_usecase.dart';
-import 'package:rongchoi_application/features/presentation/bloc/tranlation_bloc/tranlation_bloc.dart';
+import 'package:rongchoi_application/features/iam/data/datasources/db/database_helper.dart';
+import 'package:rongchoi_application/features/iam/data/datasources/local/tranlation_local_datasource.dart';
+import 'package:rongchoi_application/features/iam/data/repositories/tranlation_repository_impl.dart';
+import 'package:rongchoi_application/features/iam/domain/repositories/tranlation_repository.dart';
+import 'package:rongchoi_application/features/iam/domain/usecases/tranlation_usecases/get_all_tranlations_local_usecase.dart';
+import 'package:rongchoi_application/features/iam/presentation/bloc/tranlation_bloc/tranlation_bloc.dart';
 
 final locator = GetIt.instance;
 

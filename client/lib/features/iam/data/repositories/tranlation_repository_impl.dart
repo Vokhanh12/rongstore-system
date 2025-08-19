@@ -1,9 +1,9 @@
 import 'package:dartz/dartz.dart';
 import 'package:rongchoi_application/core/error/exception.dart';
 import 'package:rongchoi_application/core/error/failure.dart';
-import 'package:rongchoi_application/features/data/datasources/local/tranlation_local_datasource.dart';
-import 'package:rongchoi_application/features/domain/entities/tranlations_entity.dart';
-import 'package:rongchoi_application/features/domain/repositories/tranlation_repository.dart';
+import 'package:rongchoi_application/features/iam/data/datasources/local/tranlation_local_datasource.dart';
+import 'package:rongchoi_application/features/iam/domain/entities/tranlations_entity.dart';
+import 'package:rongchoi_application/features/iam/domain/repositories/tranlation_repository.dart';
 
 class TranlationRepositoryImpl implements TranlationRepository{
 

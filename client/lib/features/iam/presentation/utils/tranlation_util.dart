@@ -1,4 +1,5 @@
-import 'package:rongchoi_application/features/domain/entities/tranlations_entity.dart';
+
+import 'package:rongchoi_application/features/iam/domain/entities/tranlations_entity.dart';
 
 class TranlationUtil {
   static String getTranlationsByCode(

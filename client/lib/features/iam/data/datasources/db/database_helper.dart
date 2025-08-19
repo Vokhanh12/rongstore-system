@@ -1,7 +1,7 @@
 import 'package:objectbox/objectbox.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:rongchoi_application/features/domain/entities/tranlations_entity.dart';
+import 'package:rongchoi_application/features/iam/domain/entities/tranlations_entity.dart';
 import 'package:rongchoi_application/objectbox.g.dart';
 
 

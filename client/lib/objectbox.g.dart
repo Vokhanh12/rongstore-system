@@ -12,9 +12,9 @@ import 'package:flat_buffers/flat_buffers.dart' as fb;
 import 'package:objectbox/internal.dart'
     as obx_int; // generated code can access "internal" functionality
 import 'package:objectbox/objectbox.dart' as obx;
+import 'package:rongchoi_application/features/iam/data/models/tranlations_model.dart';
+import 'package:rongchoi_application/features/iam/domain/entities/tranlations_entity.dart';
 
-import 'features/data/models/tranlations_model.dart';
-import 'features/domain/entities/tranlations_entity.dart';
 
 export 'package:objectbox/objectbox.dart'; // so that callers only have to import this file
 

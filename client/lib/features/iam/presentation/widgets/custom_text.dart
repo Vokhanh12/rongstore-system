@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rongchoi_application/features/presentation/bloc/tranlation_bloc/tranlation_bloc.dart';
-import 'package:rongchoi_application/features/presentation/utils/tranlation_util.dart';
+import 'package:rongchoi_application/features/iam/presentation/bloc/tranlation_bloc/tranlation_bloc.dart';
+import 'package:rongchoi_application/features/iam/presentation/utils/tranlation_util.dart';
 
 class CustomText extends StatelessWidget {
   final String text;
