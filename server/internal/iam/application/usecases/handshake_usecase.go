@@ -2,18 +2,22 @@ package usecases
 
 import (
 	"context"
-	"crypto/aes"
 	"crypto/ecdh"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"io"
 	"time"
+
+	"github.com/google/uuid"
+	"golang.org/x/crypto/hkdf"
 
 	"server/internal/iam/application/commands"
 	"server/internal/iam/domain"
 	"server/pkg/crypto"
 )
 
-// zeroBytes zeroes the provided byte slice in-place.
+// zeroBytes overwrites sensitive data in memory.
 func zeroBytes(b []byte) {
 	if b == nil {
 		return
@@ -24,100 +28,105 @@ func zeroBytes(b []byte) {
 }
 
 type HandshakeUsecase struct {
-	UserRepo domain.UserRepository
+	UserRepo     domain.UserRepository
+	SessionStore domain.SessionStore
 }
 
-func NewHandshakeUsecase(repo domain.UserRepository) *HandshakeUsecase {
+func NewHandshakeUsecase(repo domain.UserRepository, store domain.SessionStore) *HandshakeUsecase {
 	return &HandshakeUsecase{
-		UserRepo: repo,
+		UserRepo:     repo,
+		SessionStore: store,
 	}
 }
 
 func (u *HandshakeUsecase) Execute(ctx context.Context, cmd commands.HandshakeCommand) (*commands.HandshakeResult, error) {
-	// Basic validation
+	// basic validation
 	if cmd.ClientPublicKey == "" {
 		return nil, domain.NewBusinessError(domain.HandshakeInvalidClientKey, "client public key is required", nil)
 	}
 
+	// Choose curve (P-521)
 	curve := ecdh.P521()
 
-	// 🔐 Tạo key pair server
+	// 1) server ephemeral keypair
 	serverPriv, err := curve.GenerateKey(rand.Reader)
 	if err != nil {
-		// server RNG/crypto failure
 		return nil, domain.NewBusinessError(domain.HandshakeRNGFail, "server key generation failed", map[string]interface{}{"cause": err.Error()})
 	}
+	serverPub := serverPriv.PublicKey()
+	serverPubBytes := serverPub.Bytes()
+	serverPubB64 := base64.StdEncoding.EncodeToString(serverPubBytes)
 
-	// ensure server private key bytes are not leaked (serverPriv is a crypto.PrivateKey interface; zeroing handled by GC)
-	// 📥 Parse client public key
-	clientPub, err := crypto.ParsePublicKeyFromBase64(cmd.ClientPublicKey)
+	// 2) parse client public key
+	clientPub, err := crypto.ParsePublicKeyFromBase64(curve, cmd.ClientPublicKey)
 	if err != nil {
-		// client-supplied invalid key
-		return nil, domain.NewBusinessError(domain.HandshakeInvalidClientKey, "invalid client public key", map[string]interface{}{"client_pub_len": len(cmd.ClientPublicKey)})
+		return nil, domain.NewBusinessError(
+			domain.HandshakeInvalidClientKey,
+			"invalid client public key",
+			map[string]interface{}{"client_pub_len": len(cmd.ClientPublicKey)},
+		)
 	}
+	clientPubBytes := clientPub.Bytes()
 
-	// 🔐 Derive shared secret
+	// 3) ECDH shared secret
 	sharedSecret, err := serverPriv.ECDH(clientPub)
 	if err != nil {
-		// key agreement failed (client key may be incompatible)
 		return nil, domain.NewBusinessError(domain.HandshakeKeyAgreementFail, "key agreement failed", nil)
 	}
-	// Ensure we wipe sharedSecret when done
 	defer zeroBytes(sharedSecret)
 
-	// 🔐 Sinh AES key, IV, salt
-	aesKey := make([]byte, 32) // AES-256
-	iv := make([]byte, aes.BlockSize)
-	salt := make([]byte, 16)
+	// 4) hkdf salt + sessionID
+	hkdfSalt := make([]byte, 16)
+	if _, err := rand.Read(hkdfSalt); err != nil {
+		return nil, domain.NewBusinessError(domain.HandshakeRNGFail, "random generation failed for hkdf salt", map[string]interface{}{"cause": err.Error()})
+	}
+	sessionID := uuid.NewString()
+	expiry := time.Now().Add(15 * time.Minute)
 
-	if _, err := rand.Read(aesKey); err != nil {
-		zeroBytes(aesKey)
-		return nil, domain.NewBusinessError(domain.HandshakeRNGFail, "random generation failed for AES key", map[string]interface{}{"cause": err.Error()})
-	}
-	if _, err := rand.Read(iv); err != nil {
-		zeroBytes(aesKey)
-		zeroBytes(iv)
-		return nil, domain.NewBusinessError(domain.HandshakeRNGFail, "random generation failed for IV", map[string]interface{}{"cause": err.Error()})
-	}
-	if _, err := rand.Read(salt); err != nil {
-		zeroBytes(aesKey)
-		zeroBytes(iv)
-		zeroBytes(salt)
-		return nil, domain.NewBusinessError(domain.HandshakeRNGFail, "random generation failed for salt", map[string]interface{}{"cause": err.Error()})
-	}
+	// 5) info context
+	info := make([]byte, 0, 256)
+	info = append(info, []byte("handshake|derive|v1|")...)
+	info = append(info, serverPubBytes...)
+	info = append(info, byte('|'))
+	info = append(info, clientPubBytes...)
+	info = append(info, byte('|'))
+	info = append(info, []byte(sessionID)...)
 
-	// 🧱 Chuẩn bị session data để mã hóa
-	sessionInfo := crypto.SessionInfo{
-		AESKey:     aesKey,
-		IV:         iv,
-		Salt:       salt,
-		Expiration: time.Now().Add(15 * time.Minute),
+	// 6) derive kc2s and ks2c
+	hk := hkdf.New(sha256.New, sharedSecret, hkdfSalt, append(info, []byte("|c2s")...))
+	kc2s := make([]byte, 32)
+	if _, err := io.ReadFull(hk, kc2s); err != nil {
+		zeroBytes(kc2s)
+		return nil, domain.NewBusinessError(domain.HandshakeKeyDeriveFail, "hkdf derive failed (c2s)", map[string]interface{}{"cause": err.Error()})
 	}
 
-	// 🔐 Mã hóa sessionInfo bằng sharedSecret
-	encryptedData, err := crypto.EncryptSessionInfo(sharedSecret, sessionInfo)
-	// wipe AES buffers once encrypted (we still keep encryptedData)
-	zeroBytes(aesKey)
-	zeroBytes(iv)
-	zeroBytes(salt)
-	if err != nil {
-		return nil, domain.NewBusinessError(domain.HandshakeEncryptFail, "failed to encrypt session info", map[string]interface{}{"cause": err.Error()})
+	hk2 := hkdf.New(sha256.New, sharedSecret, hkdfSalt, append(info, []byte("|s2c")...))
+	ks2c := make([]byte, 32)
+	if _, err := io.ReadFull(hk2, ks2c); err != nil {
+		zeroBytes(kc2s)
+		zeroBytes(ks2c)
+		return nil, domain.NewBusinessError(domain.HandshakeKeyDeriveFail, "hkdf derive failed (s2c)", map[string]interface{}{"cause": err.Error()})
 	}
 
-	// 🧾 Tạo session ID (simple UUID string)
-	sessionID := crypto.GenerateSessionID()
+	// 7) store session via SessionStore (Redis or memory)
+	entry := &domain.SessionEntry{
+		SessionID: sessionID,
+		ClientPub: clientPubBytes,
+		ServerPub: serverPubBytes,
+		Kc2s:      kc2s,
+		Ks2c:      ks2c,
+		HKDFSalt:  hkdfSalt,
+		Expiry:    expiry,
+	}
+	if err := u.SessionStore.StoreSession(ctx, entry); err != nil {
+		return nil, domain.NewBusinessError(domain.HandshakeStorageFail, "failed to store session", map[string]interface{}{"cause": err.Error()})
+	}
 
-	// 🧬 Encode public key
-	serverPubKey := serverPriv.PublicKey()
-	serverPubKeyBytes := serverPubKey.Bytes()
-	serverPubKeyBase64 := base64.StdEncoding.EncodeToString(serverPubKeyBytes)
-
-	// NOTE: Do NOT include any secret (sharedSecret or raw AES key) in the response or error data.
-	// sharedSecret will be zeroed by defer above.
-
+	// 8) build response
 	return &commands.HandshakeResult{
-		ServerPublicKey:      serverPubKeyBase64,
-		EncryptedSessionData: base64.StdEncoding.EncodeToString(encryptedData),
-		SessionID:            sessionID,
+		ServerPublicKey: serverPubB64,
+		SessionID:       sessionID,
+		HKDFSaltB64:     base64.StdEncoding.EncodeToString(hkdfSalt),
+		ExpiresAt:       expiry.Unix(),
 	}, nil
 }

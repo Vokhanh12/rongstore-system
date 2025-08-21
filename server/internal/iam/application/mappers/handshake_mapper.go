@@ -14,6 +14,9 @@ func MapHandshakeRequestToCommand(req *iamv1.HandshakeRequest) commands.Handshak
 func MapHandshakeResultToResponseDTO(result *commands.HandshakeResult) iamv1.HandshakeResponse {
 	return iamv1.HandshakeResponse{
 		ServerPublicKey:      result.ServerPublicKey,
+		SessionId:            result.SessionID,
+		HkdfSaltB64:          result.HKDFSaltB64,
+		ExpiresAt:            int32(result.ExpiresAt),
 		EncryptedSessionData: result.EncryptedSessionData,
 	}
 }

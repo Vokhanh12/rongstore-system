@@ -211,14 +211,18 @@ class HandshakeRequest extends $pb.GeneratedMessage {
 class HandshakeResponse extends $pb.GeneratedMessage {
   factory HandshakeResponse({
     $core.String? serverPublicKey,
-    $core.String? encryptedSessionData,
     $core.String? sessionId,
+    $core.String? hkdfSaltB64,
+    $core.int? expiresAt,
+    $core.String? encryptedSessionData,
   }) {
     final result = create();
     if (serverPublicKey != null) result.serverPublicKey = serverPublicKey;
+    if (sessionId != null) result.sessionId = sessionId;
+    if (hkdfSaltB64 != null) result.hkdfSaltB64 = hkdfSaltB64;
+    if (expiresAt != null) result.expiresAt = expiresAt;
     if (encryptedSessionData != null)
       result.encryptedSessionData = encryptedSessionData;
-    if (sessionId != null) result.sessionId = sessionId;
     return result;
   }
 
@@ -236,8 +240,10 @@ class HandshakeResponse extends $pb.GeneratedMessage {
       package: const $pb.PackageName(_omitMessageNames ? '' : 'iam.v1'),
       createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'serverPublicKey')
-    ..aOS(2, _omitFieldNames ? '' : 'encryptedSessionData')
-    ..aOS(3, _omitFieldNames ? '' : 'sessionId')
+    ..aOS(2, _omitFieldNames ? '' : 'sessionId')
+    ..aOS(3, _omitFieldNames ? '' : 'hkdfSaltB64')
+    ..a<$core.int>(4, _omitFieldNames ? '' : 'expiresAt', $pb.PbFieldType.O3)
+    ..aOS(5, _omitFieldNames ? '' : 'encryptedSessionData')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -271,22 +277,40 @@ class HandshakeResponse extends $pb.GeneratedMessage {
   void clearServerPublicKey() => $_clearField(1);
 
   @$pb.TagNumber(2)
-  $core.String get encryptedSessionData => $_getSZ(1);
+  $core.String get sessionId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set encryptedSessionData($core.String value) => $_setString(1, value);
+  set sessionId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
-  $core.bool hasEncryptedSessionData() => $_has(1);
+  $core.bool hasSessionId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearEncryptedSessionData() => $_clearField(2);
+  void clearSessionId() => $_clearField(2);
 
   @$pb.TagNumber(3)
-  $core.String get sessionId => $_getSZ(2);
+  $core.String get hkdfSaltB64 => $_getSZ(2);
   @$pb.TagNumber(3)
-  set sessionId($core.String value) => $_setString(2, value);
+  set hkdfSaltB64($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
-  $core.bool hasSessionId() => $_has(2);
+  $core.bool hasHkdfSaltB64() => $_has(2);
   @$pb.TagNumber(3)
-  void clearSessionId() => $_clearField(3);
+  void clearHkdfSaltB64() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.int get expiresAt => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set expiresAt($core.int value) => $_setSignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasExpiresAt() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearExpiresAt() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get encryptedSessionData => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set encryptedSessionData($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasEncryptedSessionData() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearEncryptedSessionData() => $_clearField(5);
 }
 
 const $core.bool _omitFieldNames =

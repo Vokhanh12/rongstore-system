@@ -1,12 +1,15 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -18,6 +21,13 @@ type Config struct {
 	PostgresUser     string
 	PostgresPassword string
 	PostgresDB       string
+
+	// Redis config
+	RedisHost     string
+	RedisPort     int
+	RedisPassword string
+	RedisDB       int
+	RedisTTL      int // TTL mặc định (giây) cho session
 
 	// Keycloak config
 	KeycloakURL      string
@@ -39,12 +49,31 @@ func Load() *Config {
 		log.Fatalf("Invalid POSTGRES_PORT: %v", err)
 	}
 
+	redisPort, err := strconv.Atoi(getEnv("REDIS_PORT", "6379"))
+	if err != nil {
+		log.Fatalf("Invalid REDIS_PORT: %v", err)
+	}
+	redisDB, err := strconv.Atoi(getEnv("REDIS_DB", "0"))
+	if err != nil {
+		log.Fatalf("Invalid REDIS_DB: %v", err)
+	}
+	redisTTL, err := strconv.Atoi(getEnv("REDIS_TTL", "900")) // mặc định 15 phút
+	if err != nil {
+		log.Fatalf("Invalid REDIS_TTL: %v", err)
+	}
+
 	return &Config{
 		PostgresHost:     getEnv("POSTGRES_HOST", "localhost"),
 		PostgresPort:     port,
 		PostgresUser:     getEnv("POSTGRES_USER", "postgres"),
 		PostgresPassword: getEnv("POSTGRES_PASSWORD", ""),
 		PostgresDB:       getEnv("POSTGRES_DB", "postgres"),
+
+		RedisHost:     getEnv("REDIS_HOST", "localhost"),
+		RedisPort:     redisPort,
+		RedisPassword: getEnv("REDIS_PASSWORD", ""),
+		RedisDB:       redisDB,
+		RedisTTL:      redisTTL,
 
 		KeycloakURL:      getEnv("KEYCLOAK_SERVER_URL", ""),
 		KeycloakRealm:    getEnv("KEYCLOAK_REALM", ""),
@@ -56,7 +85,8 @@ func Load() *Config {
 }
 
 func NewGormDB(cfg *Config) (*gorm.DB, error) {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
 		cfg.PostgresHost,
 		cfg.PostgresUser,
 		cfg.PostgresPassword,
@@ -64,6 +94,26 @@ func NewGormDB(cfg *Config) (*gorm.DB, error) {
 		cfg.PostgresPort,
 	)
 	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
+}
+
+// NewRedisClient khởi tạo Redis client từ cấu hình
+func NewRedisClient(cfg *Config) *redis.Client {
+	addr := fmt.Sprintf("%s:%d", cfg.RedisHost, cfg.RedisPort)
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: cfg.RedisPassword, // "" nếu không có password
+		DB:       cfg.RedisDB,       // 0 mặc định
+	})
+
+	// test kết nối
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		log.Fatalf("failed to connect to Redis at %s: %v", addr, err)
+	}
+
+	return rdb
 }
 
 func getEnv(key, fallback string) string {

@@ -37,6 +37,8 @@ message HandshakeRequest {
 
 message HandshakeResponse {
   string server_public_key = 1;
-  string encrypted_session_data = 2;
-  string session_id = 3;
+  string session_id = 2;
+  string hkdf_salt_b64 = 3;
+  int32 expires_at = 4;
+  string encrypted_session_data = 5;
 }

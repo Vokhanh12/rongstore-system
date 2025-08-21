@@ -42,12 +42,14 @@ func (e *BusinessError) MessageOr(fallback string) string {
 // Nếu cần thêm lỗi khác, bổ sung vào danh sách này.
 const (
 	// Handshake errors
-	HandshakeInvalidClientKey = "HANDSHAKE_INVALID_CLIENT_KEY"
-	HandshakeKeyAgreementFail = "HANDSHAKE_KEY_AGREEMENT_FAIL"
-	HandshakeRNGFail          = "HANDSHAKE_RNG_FAIL"
-	HandshakeEncryptFail      = "HANDSHAKE_ENCRYPT_FAIL"
+	HandshakeInvalidClientKey = "handshake_invalid_client_key"
+	HandshakeRNGFail          = "handshake_rng_fail"
+	HandshakeKeyAgreementFail = "handshake_key_agreement_fail"
+	HandshakeKeyDeriveFail    = "handshake_key_derive_fail"
+	HandshakeEncryptFail      = "handshake_encrypt_fail"
+	HandshakeStorageFail      = "handshake_storage_fail" // <--- thêm dòng này
 
-	// User / Auth examples (bạn có thể mở rộng)
+	// User / Auth examples
 	UserNotFound   = "USER_NOT_FOUND"
 	UserEmailTaken = "USER_EMAIL_TAKEN"
 )

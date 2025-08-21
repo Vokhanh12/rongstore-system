@@ -173,8 +173,10 @@ func (x *HandshakeRequest) GetClientPublicKey() string {
 type HandshakeResponse struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	ServerPublicKey      string                 `protobuf:"bytes,1,opt,name=server_public_key,json=serverPublicKey,proto3" json:"server_public_key,omitempty"`
-	EncryptedSessionData string                 `protobuf:"bytes,2,opt,name=encrypted_session_data,json=encryptedSessionData,proto3" json:"encrypted_session_data,omitempty"`
-	SessionId            string                 `protobuf:"bytes,3,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	SessionId            string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	HkdfSaltB64          string                 `protobuf:"bytes,3,opt,name=hkdf_salt_b64,json=hkdfSaltB64,proto3" json:"hkdf_salt_b64,omitempty"`
+	ExpiresAt            int32                  `protobuf:"varint,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	EncryptedSessionData string                 `protobuf:"bytes,5,opt,name=encrypted_session_data,json=encryptedSessionData,proto3" json:"encrypted_session_data,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -216,16 +218,30 @@ func (x *HandshakeResponse) GetServerPublicKey() string {
 	return ""
 }
 
-func (x *HandshakeResponse) GetEncryptedSessionData() string {
+func (x *HandshakeResponse) GetSessionId() string {
 	if x != nil {
-		return x.EncryptedSessionData
+		return x.SessionId
 	}
 	return ""
 }
 
-func (x *HandshakeResponse) GetSessionId() string {
+func (x *HandshakeResponse) GetHkdfSaltB64() string {
 	if x != nil {
-		return x.SessionId
+		return x.HkdfSaltB64
+	}
+	return ""
+}
+
+func (x *HandshakeResponse) GetExpiresAt() int32 {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return 0
+}
+
+func (x *HandshakeResponse) GetEncryptedSessionData() string {
+	if x != nil {
+		return x.EncryptedSessionData
 	}
 	return ""
 }
@@ -242,12 +258,15 @@ const file_iam_v1_iam_proto_rawDesc = "" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12#\n" +
 	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\">\n" +
 	"\x10HandshakeRequest\x12*\n" +
-	"\x11client_public_key\x18\x01 \x01(\tR\x0fclientPublicKey\"\x94\x01\n" +
+	"\x11client_public_key\x18\x01 \x01(\tR\x0fclientPublicKey\"\xd7\x01\n" +
 	"\x11HandshakeResponse\x12*\n" +
-	"\x11server_public_key\x18\x01 \x01(\tR\x0fserverPublicKey\x124\n" +
-	"\x16encrypted_session_data\x18\x02 \x01(\tR\x14encryptedSessionData\x12\x1d\n" +
+	"\x11server_public_key\x18\x01 \x01(\tR\x0fserverPublicKey\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x03 \x01(\tR\tsessionId2\xb4\x01\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionId\x12\"\n" +
+	"\rhkdf_salt_b64\x18\x03 \x01(\tR\vhkdfSaltB64\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x04 \x01(\x05R\texpiresAt\x124\n" +
+	"\x16encrypted_session_data\x18\x05 \x01(\tR\x14encryptedSessionData2\xb4\x01\n" +
 	"\n" +
 	"IamService\x12J\n" +
 	"\x05Login\x12\x14.iam.v1.LoginRequest\x1a\x15.iam.v1.LoginResponse\"\x14\x82\xd3\xe4\x93\x02\x0e:\x01*\"\t/v1/login\x12Z\n" +

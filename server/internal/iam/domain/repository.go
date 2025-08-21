@@ -1,6 +1,8 @@
 package domain
 
-import "context"
+import (
+	"context"
+)
 
 type UserRepository interface {
 	FindByEmail(ctx context.Context, email string) (*User, error)

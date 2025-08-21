@@ -60,19 +60,22 @@ const HandshakeResponse$json = {
   '1': 'HandshakeResponse',
   '2': [
     {'1': 'server_public_key', '3': 1, '4': 1, '5': 9, '10': 'serverPublicKey'},
+    {'1': 'session_id', '3': 2, '4': 1, '5': 9, '10': 'sessionId'},
+    {'1': 'hkdf_salt_b64', '3': 3, '4': 1, '5': 9, '10': 'hkdfSaltB64'},
+    {'1': 'expires_at', '3': 4, '4': 1, '5': 5, '10': 'expiresAt'},
     {
       '1': 'encrypted_session_data',
-      '3': 2,
+      '3': 5,
       '4': 1,
       '5': 9,
       '10': 'encryptedSessionData'
     },
-    {'1': 'session_id', '3': 3, '4': 1, '5': 9, '10': 'sessionId'},
   ],
 };
 
 /// Descriptor for `HandshakeResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List handshakeResponseDescriptor = $convert.base64Decode(
     'ChFIYW5kc2hha2VSZXNwb25zZRIqChFzZXJ2ZXJfcHVibGljX2tleRgBIAEoCVIPc2VydmVyUH'
-    'VibGljS2V5EjQKFmVuY3J5cHRlZF9zZXNzaW9uX2RhdGEYAiABKAlSFGVuY3J5cHRlZFNlc3Np'
-    'b25EYXRhEh0KCnNlc3Npb25faWQYAyABKAlSCXNlc3Npb25JZA==');
+    'VibGljS2V5Eh0KCnNlc3Npb25faWQYAiABKAlSCXNlc3Npb25JZBIiCg1oa2RmX3NhbHRfYjY0'
+    'GAMgASgJUgtoa2RmU2FsdEI2NBIdCgpleHBpcmVzX2F0GAQgASgFUglleHBpcmVzQXQSNAoWZW'
+    '5jcnlwdGVkX3Nlc3Npb25fZGF0YRgFIAEoCVIUZW5jcnlwdGVkU2Vzc2lvbkRhdGE=');

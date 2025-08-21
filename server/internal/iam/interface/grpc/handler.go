@@ -55,6 +55,9 @@ func (h *IamHandler) Handshake(ctx context.Context, req *iamv1.HandshakeRequest)
 	resDTO := mappers.MapHandshakeResultToResponseDTO(result)
 	return &iamv1.HandshakeResponse{
 		ServerPublicKey:      resDTO.ServerPublicKey,
+		SessionId:            resDTO.SessionId,
+		HkdfSaltB64:          resDTO.HkdfSaltB64,
+		ExpiresAt:            resDTO.ExpiresAt,
 		EncryptedSessionData: resDTO.EncryptedSessionData,
 	}, nil
 }

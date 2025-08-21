@@ -1,0 +1,59 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Debug Server (package)",
+        "type": "go",
+        "request": "launch",
+        "mode": "auto",
+        "program": "${workspaceFolder}/server/cmd/server",
+        "env": {
+          "LOG_LEVEL": "debug",
+          "TZ": "Asia/Ho_Chi_Minh"
+        },
+        "args": [],
+        "buildFlags": "",
+        "cwd": "${workspaceFolder}"
+      },
+      {
+        "name": "Debug Server (main.go file, absolute)",
+        "type": "go",
+        "request": "launch",
+        "mode": "debug",
+        "program": "/Users/vokhanh12/Development/rongstore-system/server/cmd/server/main.go",
+        "env": {
+          "LOG_LEVEL": "debug"
+        }
+      },
+      {
+        "name": "Debug Current File",
+        "type": "go",
+        "request": "launch",
+        "mode": "debug",
+        "program": "${file}",
+        "env": {
+          "LOG_LEVEL": "debug"
+        }
+      },
+      {
+        "name": "Attach to Process (delve)",
+        "type": "go",
+        "request": "attach",
+        "mode": "local",
+        "port": 2345,
+        "host": "127.0.0.1",
+        "cwd": "${workspaceFolder}"
+      },
+      {
+        "name": "Test: Debug package tests",
+        "type": "go",
+        "request": "launch",
+        "mode": "test",
+        "program": "${workspaceFolder}",
+        "env": {
+          "LOG_LEVEL": "debug"
+        }
+      }
+    ]
+  }
+  
