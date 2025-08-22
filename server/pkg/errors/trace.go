@@ -2,26 +2,41 @@ package errors
 
 import "context"
 
-// traceKey is an unexported type to avoid collisions in context keys.
-type traceKey struct{}
+type ctxKey string
 
-// WithTraceID returns a new context with the trace id attached.
-func WithTraceID(ctx context.Context, id string) context.Context {
-	if ctx == nil {
-		ctx = context.Background()
+const (
+	ctxKeyTraceID   ctxKey = "trace_id"
+	ctxKeySessionID ctxKey = "session_id"
+	ctxKeyUserID    ctxKey = "user_id"
+)
+
+func WithTraceID(ctx context.Context, traceID string) context.Context {
+	return context.WithValue(ctx, ctxKeyTraceID, traceID)
+}
+func TraceIDFromContext(ctx context.Context) string {
+	if v, ok := ctx.Value(ctxKeyTraceID).(string); ok {
+		return v
 	}
-	return context.WithValue(ctx, traceKey{}, id)
+	return ""
 }
 
-// TraceIDFromContext extracts trace id from context. Returns empty string if not present.
-func TraceIDFromContext(ctx context.Context) string {
-	if ctx == nil {
-		return ""
+// ---- new: session / user helpers ----
+func WithSessionID(ctx context.Context, sid string) context.Context {
+	return context.WithValue(ctx, ctxKeySessionID, sid)
+}
+func SessionIDFromContext(ctx context.Context) string {
+	if v, ok := ctx.Value(ctxKeySessionID).(string); ok {
+		return v
 	}
-	if v := ctx.Value(traceKey{}); v != nil {
-		if s, ok := v.(string); ok {
-			return s
-		}
+	return ""
+}
+
+func WithUserID(ctx context.Context, uid string) context.Context {
+	return context.WithValue(ctx, ctxKeyUserID, uid)
+}
+func UserIDFromContext(ctx context.Context) string {
+	if v, ok := ctx.Value(ctxKeyUserID).(string); ok {
+		return v
 	}
 	return ""
 }

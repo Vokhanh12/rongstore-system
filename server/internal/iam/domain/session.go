@@ -17,6 +17,8 @@ type SessionEntry struct {
 	Expiry   time.Time
 
 	// optional fields for replay protection etc can be kept in infrastructure layer
+	UserID   string // optional user ID, non-sensitive, for logging
+	ClientIP string // optional client IP, non-sensitive, for logging
 }
 
 // SessionStore là interface domain cho session persistence.

@@ -52,3 +52,60 @@ func main() {
 	fmt.Println("🔐 Client Private Key (Base64):")
 	fmt.Println(privKeyBase64)
 }
+
+w5MCCq+SPdKaP8sq7ezKR7bza8eZNOvBr8ZElqFO3U8=
+
+package main
+
+import (
+	"crypto/ecdh"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"log"
+)
+
+type Payload struct {
+	ClientPublicKey string `json:"clientPublicKey"`
+}
+
+func main() {
+	// 1) Generate X25519 keypair
+	curve := ecdh.X25519()
+	priv, err := curve.GenerateKey(rand.Reader)
+	if err != nil {
+		log.Fatalf("generate key: %v", err)
+	}
+
+	// 2) Get raw public key bytes (32 bytes for X25519)
+	pub := priv.PublicKey()
+	rawPub := pub.Bytes()
+	if len(rawPub) != 32 {
+		log.Fatalf("unexpected public key length: %d", len(rawPub))
+	}
+
+	// 3) Base64-encode the raw public key
+	b64Pub := base64.StdEncoding.EncodeToString(rawPub)
+
+	// 4) Pack into JSON payload
+	payload := Payload{ClientPublicKey: b64Pub}
+	j, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		log.Fatalf("marshal json: %v", err)
+	}
+
+	fmt.Println("JSON to send to server:")
+	fmt.Println(string(j))
+
+	// -------------------------
+	// Demo: server-side quick check (decode & verify length)
+	// -------------------------
+	decoded, err := base64.StdEncoding.DecodeString(b64Pub)
+	if err != nil {
+		log.Fatalf("server decode base64: %v", err)
+	}
+	fmt.Printf("\nServer-side check: decoded length = %d bytes\n", len(decoded))
+	// (server would then use its own X25519 private key and call srvPriv.ECDH(clientPub))
+	_ = decoded // here just to show
+}

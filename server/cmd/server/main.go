@@ -12,8 +12,7 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	iampb "server/api/iam/v1"
-	iam_di "server/internal/iam"
-
+	wire "server/internal/iam"
 	"server/pkg/errors"
 	"server/pkg/logger"
 	"server/pkg/metrics"
@@ -21,20 +20,20 @@ import (
 )
 
 func main() {
-	// 0) init logger (production mode)
+	// 0) Init logger
 	if err := logger.Init(true); err != nil {
 		log.Fatalf("failed to init logger: %v", err)
 	}
 	zlog := logger.L
 	defer zlog.Sync()
 
-	// 1) load error catalog (optional)
+	// 1) Load error catalog
 	catalogPath := filepath.Join(".", "errors.yaml")
 	if err := errors.InitFromYAML(catalogPath); err != nil {
 		zlog.Warn("cannot load errors.yaml, using static mapping", zap.String("path", catalogPath), zap.Error(err))
 	}
 
-	// 2) register prometheus metrics and expose /metrics
+	// 2) Prometheus metrics
 	metrics.Register()
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
@@ -44,33 +43,29 @@ func main() {
 		}
 	}()
 
-	// 3) listen grpc
+	// 3) Listen gRPC
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		zlog.Fatal("failed to listen", zap.Error(err))
 	}
 
-	// 4) create gRPC server with interceptors:
-	// - trace extractor (metadata -> ctx)
-	// - observability (metrics + logging)
-	// - translate errors to grpc status
-	s := grpc.NewServer(
-		grpc.ChainUnaryInterceptor(
-			observability.GrpcTraceUnaryInterceptor(), // inject trace_id
-			//observability.UnaryLoggingInterceptor(),             // logs request
-			observability.UnaryServerInterceptor("iam_service"), // metrics & more
-		),
-	)
-
-	reflection.Register(s)
-
-	// 5) initialize services / handlers
-	iamService, err := iam_di.InitializeIamHandler()
+	// 4) Initialize IAM handler via Wire
+	iamHandler, err := wire.InitializeIamHandler()
 	if err != nil {
 		zlog.Fatal("failed to initialize IAM handler", zap.Error(err))
 	}
 
-	iampb.RegisterIamServiceServer(s, iamService)
+	// 5) Create gRPC server with interceptors
+	// sessionStore adapter được tạo bên trong handler
+	s := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			observability.GrpcTraceUnaryInterceptor(),
+			observability.UnaryServerInterceptor("iam_service", iamHandler.Handshake()),
+		),
+	)
+
+	reflection.Register(s)
+	iampb.RegisterIamServiceServer(s, iamHandler)
 
 	zlog.Info("gRPC server started", zap.String("addr", ":50051"))
 	if err := s.Serve(lis); err != nil {
