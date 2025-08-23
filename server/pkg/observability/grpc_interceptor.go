@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"server/internal/iam/domain"
 	"server/pkg/errors"
 	"server/pkg/logger"
 	"server/pkg/metrics"
@@ -63,18 +64,20 @@ func httpStatusToGRPCCode(httpStatus int) codes.Code {
 	}
 }
 
-// UnaryServerInterceptor returns a gRPC interceptor with metrics + access logging + error translation
-func UnaryServerInterceptor(serviceName string, store SessionStore) grpc.UnaryServerInterceptor {
+// UnaryServerInterceptor returns a gRPC interceptor with metrics + access logging + error translation.
+// - serviceName: name for metrics/logging
+// - store: domain.SessionStore (optional) used to enrich ctx with user_id and client IP
+func UnaryServerInterceptor(serviceName string, store domain.SessionStore) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		start := time.Now()
 		fullMethod := info.FullMethod
 		handlerName := handlerNameFromFullMethod(fullMethod)
 
-		// metrics inflight
+		// metrics: inflight
 		metrics.InflightRequests.WithLabelValues(serviceName, handlerName).Inc()
 		defer metrics.InflightRequests.WithLabelValues(serviceName, handlerName).Dec()
 
-		// extract session-id from metadata
+		// 1) extract session-id from incoming metadata (if any)
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
 			if svals := md.Get("x-session-id"); len(svals) > 0 {
 				ctx = errors.WithSessionID(ctx, svals[0])
@@ -83,34 +86,43 @@ func UnaryServerInterceptor(serviceName string, store SessionStore) grpc.UnarySe
 			}
 		}
 
-		// enrich user from SessionStore if present
+		// 2) enrich ctx with user_id and optional clientIP from session store (best-effort)
 		var sessionIP string
 		if sid := errors.SessionIDFromContext(ctx); sid != "" && store != nil {
-			if sInfo, err := store.Get(ctx, sid); err == nil && sInfo != nil {
-				ctx = errors.WithUserID(ctx, sInfo.UserID)
-				sessionIP = sInfo.IP
+			if se, err := store.GetSession(ctx, sid); err == nil && se != nil {
+				// store.GetSession returns domain.SessionEntry; keep only non-sensitive info
+				if se.UserID != "" {
+					ctx = errors.WithUserID(ctx, se.UserID)
+				}
+				if se.ClientIP != "" {
+					sessionIP = se.ClientIP
+				}
 			}
 		}
 
-		// get peer IP (best-effort)
+		// 3) get peer IP as fallback (best-effort)
 		var peerIP string
 		if p, ok := peer.FromContext(ctx); ok && p != nil {
 			if addr, ok := p.Addr.(*net.TCPAddr); ok {
 				peerIP = addr.IP.String()
 			} else {
+				// fallback to string (may include port)
 				peerIP = p.Addr.String()
+				if host, _, err := net.SplitHostPort(peerIP); err == nil {
+					peerIP = host
+				}
 			}
 		}
-		// prefer session IP if available
+		// prefer session IP if available (set by store)
 		if sessionIP != "" {
 			peerIP = sessionIP
 		}
 
-		// call handler
+		// 4) call actual handler
 		resp, err := handler(ctx, req)
 		latencyMs := time.Since(start).Milliseconds()
 
-		// default labels and error handling
+		// 5) error handling + metrics
 		statusLabel := "OK"
 		var appErr *errors.AppError
 		if err != nil {
@@ -134,13 +146,9 @@ func UnaryServerInterceptor(serviceName string, store SessionStore) grpc.UnarySe
 		metrics.RequestsTotal.WithLabelValues(serviceName, handlerName, fullMethod, statusLabel).Inc()
 		metrics.RequestDuration.WithLabelValues(serviceName, handlerName, fullMethod).Observe(float64(latencyMs) / 1000.0)
 
-		// access log env
-		env := os.Getenv("ENV")
-		if env == "" {
-			env = "unknown"
-		}
-
-		// map grpc/error to HTTP-like code
+		// 6) prepare access log fields (no duplication here)
+		// env/instance/user/session/trace are added by logger.LogAccess by reading ctx and helpers,
+		// so we avoid re-adding them here to prevent duplicates.
 		httpCode := 200
 		if err != nil {
 			switch statusLabel {
@@ -157,7 +165,6 @@ func UnaryServerInterceptor(serviceName string, store SessionStore) grpc.UnarySe
 			}
 		}
 
-		// emit centralized access log
 		accessParams := logger.AccessParams{
 			Service:   serviceName,
 			Handler:   handlerName,
@@ -166,24 +173,17 @@ func UnaryServerInterceptor(serviceName string, store SessionStore) grpc.UnarySe
 			Status:    statusLabel,
 			LatencyMS: latencyMs,
 			IP:        peerIP,
-			Extra: map[string]interface{}{
-				"instance": hostnameCache,
-				"env":      env,
-			},
-		}
-		if sid := errors.SessionIDFromContext(ctx); sid != "" {
-			accessParams.Extra["session_id"] = sid
-		}
-		if uid := errors.UserIDFromContext(ctx); uid != "" {
-			accessParams.Extra["user_id"] = uid
+			// keep Extra empty here to avoid duplicate instance/env/session/user entries;
+			// use logger.LogAccess's internal enrichment.
+			Extra: map[string]interface{}{},
 		}
 
 		logger.LogAccess(ctx, accessParams)
 
+		// 7) translate domain app error -> grpc status for return
 		if err == nil {
 			return resp, nil
 		}
-
 		grpcCode := httpStatusToGRPCCode(appErr.Status)
 		st := status.New(grpcCode, strings.Join([]string{appErr.Code, appErr.Message}, "|"))
 		return nil, st.Err()

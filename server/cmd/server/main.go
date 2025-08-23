@@ -49,23 +49,22 @@ func main() {
 		zlog.Fatal("failed to listen", zap.Error(err))
 	}
 
-	// 4) Initialize IAM handler via Wire
-	iamHandler, err := wire.InitializeIamHandler()
+	// 4) Wire up
+	deps, err := wire.InitializeIamHandler()
 	if err != nil {
-		zlog.Fatal("failed to initialize IAM handler", zap.Error(err))
+		zlog.Fatal("failed to initialize IAM deps", zap.Error(err))
 	}
 
-	// 5) Create gRPC server with interceptors
-	// sessionStore adapter được tạo bên trong handler
+	// 5) gRPC server + interceptors (trace + obs with session store)
 	s := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			observability.GrpcTraceUnaryInterceptor(),
-			observability.UnaryServerInterceptor("iam_service", iamHandler.Handshake()),
+			observability.UnaryServerInterceptor("iam_service", deps.Store),
 		),
 	)
 
 	reflection.Register(s)
-	iampb.RegisterIamServiceServer(s, iamHandler)
+	iampb.RegisterIamServiceServer(s, deps.Handler)
 
 	zlog.Info("gRPC server started", zap.String("addr", ":50051"))
 	if err := s.Serve(lis); err != nil {

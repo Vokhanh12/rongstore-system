@@ -20,18 +20,14 @@ type RedisSessionStore struct {
 }
 
 // NewRedisSessionStore creates a new RedisSessionStore.
-func NewRedisSessionStore(rdb *redis.Client, ttl time.Duration) *RedisSessionStore {
+func NewRedisSessionStore(rdb *redis.Client, ttl time.Duration) domain.SessionStore {
 	return &RedisSessionStore{rdb: rdb, ttl: ttl}
 }
 
-// Provider cho Wire, trả interface domain.SessionStore
-func NewRedisSessionStoreProvider(rdb *redis.Client, ttlSec int) domain.SessionStore {
-	return NewRedisSessionStore(rdb, time.Duration(ttlSec)*time.Second)
-}
-
-// Provider cho Wire: lấy ttlSec từ config
-func RedisTTLFromConfig(cfg *config.Config) int {
-	return cfg.RedisTTL
+// Provider cho Wire: trả time.Duration trực tiếp
+func RedisTTLFromConfig(cfg *config.Config) time.Duration {
+	// giả sử cfg.RedisTTL là số giây (int)
+	return time.Duration(cfg.RedisTTL) * time.Second
 }
 
 // helper convert domain.Context -> context.Context

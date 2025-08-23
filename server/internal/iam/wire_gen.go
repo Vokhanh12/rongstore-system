@@ -16,18 +16,22 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeIamHandler() (*grpc.IamHandler, error) {
+func InitializeIamHandler() (IamDeps, error) {
 	configConfig := config.Load()
 	db, err := config.NewGormDB(configConfig)
 	if err != nil {
-		return nil, err
+		return IamDeps{}, err
 	}
 	userRepository := repositories.NewGormRepository(db)
 	loginUserUsecase := usecases.NewLoginUserUsecase(userRepository)
 	client := config.NewRedisClient(configConfig)
-	int2 := cache.RedisTTLFromConfig(configConfig)
-	sessionStore := cache.NewRedisSessionStoreProvider(client, int2)
+	duration := cache.RedisTTLFromConfig(configConfig)
+	sessionStore := cache.NewRedisSessionStore(client, duration)
 	handshakeUsecase := usecases.NewHandshakeUsecase(userRepository, sessionStore)
 	iamHandler := grpc.NewIamHandler(loginUserUsecase, handshakeUsecase)
-	return iamHandler, nil
+	iamDeps := IamDeps{
+		Handler: iamHandler,
+		Store:   sessionStore,
+	}
+	return iamDeps, nil
 }

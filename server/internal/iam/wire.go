@@ -9,23 +9,22 @@ import (
 	"server/internal/iam/infrastructure/repositories"
 	"server/internal/iam/interface/grpc"
 	"server/pkg/config"
-	"server/pkg/observability"
 
 	"github.com/google/wire"
 )
 
-func InitializeIamHandler() (*grpc.IamHandler, observability.SessionStore, error) {
+func InitializeIamHandler() (IamDeps, error) {
 	wire.Build(
 		config.Load,
 		config.NewRedisClient,
 		config.NewGormDB,
 		repositories.NewGormRepository,
 		cache.RedisTTLFromConfig,
-		cache.NewRedisSessionStoreProvider,        // -> *cache.RedisSessionStore
-		cache.NewObservabilitySessionStoreAdapter, // -> observability.SessionStore
+		cache.NewRedisSessionStore,
 		usecases.NewLoginUserUsecase,
 		usecases.NewHandshakeUsecase,
 		grpc.NewIamHandler,
+		wire.Struct(new(IamDeps), "Handler", "Store"),
 	)
-	return &grpc.IamHandler{}, nil, nil
+	return IamDeps{}, nil
 }

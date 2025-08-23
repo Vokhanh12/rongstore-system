@@ -6,11 +6,13 @@ import (
 
 	"server/pkg/errors"
 
+	"server/internal/iam/domain"
+
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
-func HTTPMiddleware(next http.Handler, store SessionStore, serviceName string) http.Handler {
+func HTTPMiddleware(next http.Handler, store domain.SessionStore, serviceName string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		ctx := r.Context()
@@ -32,7 +34,7 @@ func HTTPMiddleware(next http.Handler, store SessionStore, serviceName string) h
 		if sid != "" {
 			ctx = errors.WithSessionID(ctx, sid)
 			if store != nil {
-				if s, _ := store.Get(ctx, sid); s != nil {
+				if s, _ := store.GetSession(ctx, sid); s != nil {
 					ctx = errors.WithUserID(ctx, s.UserID)
 				}
 			}
