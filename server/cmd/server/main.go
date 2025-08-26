@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
@@ -13,6 +14,8 @@ import (
 
 	iampb "server/api/iam/v1"
 	wire "server/internal/iam"
+	"server/internal/iam/infrastructure/client"
+	"server/pkg/config"
 	"server/pkg/errors"
 	"server/pkg/logger"
 	"server/pkg/metrics"
@@ -33,7 +36,11 @@ func main() {
 		zlog.Warn("cannot load errors.yaml, using static mapping", zap.String("path", catalogPath), zap.Error(err))
 	}
 
-	// 2) Prometheus metrics
+	// 2) Load config
+	cfg := config.Load()
+	zlog.Info("config loaded", zap.String("keycloak_url", cfg.KeycloakURL))
+
+	// 3) Prometheus metrics
 	metrics.Register()
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
@@ -43,19 +50,32 @@ func main() {
 		}
 	}()
 
-	// 3) Listen gRPC
+	// 4) Init Keycloak client & wait ready
+	maxRetries := 10
+	interval := 3 * time.Second
+	zlog.Info("checking Keycloak readiness", zap.String("url", cfg.KeycloakURL))
+	kcClient, err := client.InitKeycloakClient(cfg, maxRetries, interval)
+	if err != nil {
+		zlog.Fatal("Keycloak is not ready", zap.Error(err))
+	}
+	zlog.Info("Keycloak client ready", zap.String("base_url", kcClient.GetBaseURL()))
+
+	// 5) Listen gRPC
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		zlog.Fatal("failed to listen", zap.Error(err))
 	}
 
-	// 4) Wire up
+	// 6) Wire up dependencies
 	deps, err := wire.InitializeIamHandler()
 	if err != nil {
 		zlog.Fatal("failed to initialize IAM deps", zap.Error(err))
 	}
 
-	// 5) gRPC server + interceptors (trace + obs with session store)
+	// Gán Keycloak client đã init vào deps
+	deps.Keycloak = kcClient
+
+	// 7) Start gRPC server with interceptors
 	s := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			observability.GrpcTraceUnaryInterceptor(),

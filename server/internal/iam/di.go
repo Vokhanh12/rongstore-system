@@ -6,6 +6,7 @@ import (
 )
 
 type IamDeps struct {
-	Handler *iagrpc.IamHandler
-	Store   domain.SessionStore
+	Handler  *iagrpc.IamHandler
+	Store    domain.SessionStore
+	Keycloak domain.Keycloak
 }

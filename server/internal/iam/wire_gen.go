@@ -9,6 +9,7 @@ package wire
 import (
 	"server/internal/iam/application/usecases"
 	"server/internal/iam/infrastructure/cache"
+	"server/internal/iam/infrastructure/client"
 	"server/internal/iam/infrastructure/repositories"
 	"server/internal/iam/interface/grpc"
 	"server/pkg/config"
@@ -23,15 +24,17 @@ func InitializeIamHandler() (IamDeps, error) {
 		return IamDeps{}, err
 	}
 	userRepository := repositories.NewGormRepository(db)
-	loginUserUsecase := usecases.NewLoginUserUsecase(userRepository)
-	client := config.NewRedisClient(configConfig)
+	keycloak := client.NewKeycloakClient(configConfig)
+	loginUserUsecase := usecases.NewLoginUserUsecase(userRepository, keycloak)
+	redisClient := config.NewRedisClient(configConfig)
 	duration := cache.RedisTTLFromConfig(configConfig)
-	sessionStore := cache.NewRedisSessionStore(client, duration)
+	sessionStore := cache.NewRedisSessionStore(redisClient, duration)
 	handshakeUsecase := usecases.NewHandshakeUsecase(userRepository, sessionStore)
 	iamHandler := grpc.NewIamHandler(loginUserUsecase, handshakeUsecase)
 	iamDeps := IamDeps{
-		Handler: iamHandler,
-		Store:   sessionStore,
+		Handler:  iamHandler,
+		Store:    sessionStore,
+		Keycloak: keycloak,
 	}
 	return iamDeps, nil
 }

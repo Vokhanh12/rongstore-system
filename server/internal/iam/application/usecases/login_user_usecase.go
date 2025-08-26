@@ -8,23 +8,24 @@ import (
 
 type LoginUserUsecase struct {
 	UserRepo domain.UserRepository
+	Keycloak domain.Keycloak
 }
 
-func NewLoginUserUsecase(repo domain.UserRepository) *LoginUserUsecase {
+func NewLoginUserUsecase(repo domain.UserRepository, kcl domain.Keycloak) *LoginUserUsecase {
 	return &LoginUserUsecase{
 		UserRepo: repo,
+		Keycloak: kcl,
 	}
 }
 
 func (u *LoginUserUsecase) Execute(ctx context.Context, cmd commands.LoginCommand) (*commands.LoginResult, error) {
-
-	_, err := u.UserRepo.FindByEmail(ctx, cmd.Email)
+	token, err := u.Keycloak.GetToken(ctx, cmd.Email, cmd.Password)
 	if err != nil {
 		return nil, err
 	}
 
 	return &commands.LoginResult{
-		AccessToken:  "accessToken",
-		RefreshToken: "refreshToken",
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
 	}, nil
 }

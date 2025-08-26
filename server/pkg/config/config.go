@@ -30,12 +30,13 @@ type Config struct {
 	RedisTTL      int // TTL mặc định (giây) cho session
 
 	// Keycloak config
-	KeycloakURL      string
-	KeycloakRealm    string
-	KeycloakClientID string
-	KeycloakSecret   string
-	KeycloakRedirect string
-	KeycloakScope    string
+	KeycloakURL          string
+	KeycloakServerHealth string
+	KeycloakRealm        string
+	KeycloakClientID     string
+	KeycloakSecret       string
+	KeycloakRedirect     string
+	KeycloakScope        string
 }
 
 func Load() *Config {
@@ -75,12 +76,13 @@ func Load() *Config {
 		RedisDB:       redisDB,
 		RedisTTL:      redisTTL,
 
-		KeycloakURL:      getEnv("KEYCLOAK_SERVER_URL", ""),
-		KeycloakRealm:    getEnv("KEYCLOAK_REALM", ""),
-		KeycloakClientID: getEnv("KEYCLOAK_CLIENT_ID", ""),
-		KeycloakSecret:   getEnv("KEYCLOAK_CLIENT_SECRET", ""),
-		KeycloakRedirect: getEnv("KEYCLOAK_REDIRECT_URI", ""),
-		KeycloakScope:    getEnv("KEYCLOAK_SCOPE", ""),
+		KeycloakURL:          getEnv("KEYCLOAK_SERVER_URL", ""),
+		KeycloakServerHealth: getEnv("KEYCLOAK_SERVER_HEALTH", ""),
+		KeycloakRealm:        getEnv("KEYCLOAK_REALM", ""),
+		KeycloakClientID:     getEnv("KEYCLOAK_CLIENT_ID", ""),
+		KeycloakSecret:       getEnv("KEYCLOAK_CLIENT_SECRET", ""),
+		KeycloakRedirect:     getEnv("KEYCLOAK_REDIRECT_URI", ""),
+		KeycloakScope:        getEnv("KEYCLOAK_SCOPE", ""),
 	}
 }
 
