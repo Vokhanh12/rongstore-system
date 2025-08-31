@@ -23,7 +23,7 @@ class DatabaseHelper {
   Future<Store> _create() async {
     final appDir = await getApplicationDocumentsDirectory();
     final dbPath = path.join(appDir.path, "MessengerObjectBox");
-    final store = await openStore(directory: dbPath);
+    final store = openStore(directory: dbPath);
     return store;
   }
 

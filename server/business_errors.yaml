@@ -1,0 +1,178 @@
+version: 1
+updated_at: "2025-08-17"
+owner: platform-auth
+
+services:
+  iam:
+    conventions:
+      code_format: "<DOMAIN>-<AREA>-<NNN>"
+      domain: "AUTH"
+a
+      severity_scale:
+        S1: "Critical outage/security risk"
+        S2: "Degraded experience or important failure"
+        S3: "Minor / client input issue"
+      retry_policy:
+        retryable_statuses_http: [408, 429, 500, 502, 503, 504]
+        grpc_retryable: ["Unavailable", "DeadlineExceeded"]
+
+    errors:
+      HAND:
+        - code: AUTH-HAND-001
+          key: HANDSHAKE_INVALID_CLIENT_KEY
+          http_status: 400
+          grpc_code: InvalidArgument
+          message: "Invalid client public key"
+          severity: S3
+          retryable: false
+          cause: "Client sent malformed/unsupported public key"
+          client_action: "Validate/generate correct key and retry"
+          server_action: "Log warn with trace_id; no alert"
+
+        - code: AUTH-HAND-002
+          key: HANDSHAKE_KEY_AGREEMENT_FAIL
+          http_status: 422
+          grpc_code: FailedPrecondition
+          message: "Key agreement failed"
+          severity: S3
+          retryable: false
+          cause: "ECDH derive failed due to incompatible/invalid key"
+          client_action: "Regenerate keypair on supported curve"
+          server_action: "Log warn; verify accepted curves list"
+
+        - code: AUTH-HAND-003
+          key: HANDSHAKE_RNG_FAIL
+          http_status: 500
+          grpc_code: Internal
+          message: "Random generation failed"
+          severity: S1
+          retryable: true
+          cause: "System RNG failure"
+          client_action: "Retry handshake"
+          server_action: "Alert; investigate RNG availability"
+
+        - code: AUTH-HAND-004
+          key: HANDSHAKE_KEY_DERIVE_FAIL
+          http_status: 500
+          grpc_code: Internal
+          message: "Key derivation failed"
+          severity: S1
+          retryable: true
+          cause: "HKDF derivation failed"
+          client_action: "Retry handshake"
+          server_action: "Alert; investigate HKDF process"
+
+        - code: AUTH-HAND-005
+          key: HANDSHAKE_STORAGE_FAIL
+          http_status: 500
+          grpc_code: Internal
+          message: "Failed to store session"
+          severity: S1
+          retryable: true
+          cause: "Redis/DB failure during session storage"
+          client_action: "Retry handshake"
+          server_action: "Alert; check session store health"
+
+      LOGIN:
+        - code: AUTH-LOGIN-001
+          key: INVALID_CREDENTIALS
+          http_status: 401
+          grpc_code: Unauthenticated
+          message: "Invalid email or password"
+          severity: S3
+          retryable: false
+          cause: "Wrong credentials"
+          client_action: "Prompt user to re-enter credentials"
+          server_action: "Log info; consider login attempt metrics"
+
+      TOKEN:
+        - code: AUTH-TOKEN-001
+          key: TOKEN_EXPIRED
+          http_status: 401
+          grpc_code: Unauthenticated
+          message: "Token expired"
+          severity: S3
+          retryable: false
+          cause: "Access token beyond exp"
+          client_action: "Use refresh token or re-login"
+          server_action: "Log info; track token expiry patterns"
+
+      INFRA:
+        - code: AUTH-INFRA-001
+          key: DB_TIMEOUT
+          http_status: 503
+          grpc_code: Unavailable
+          message: "Service temporarily unavailable"
+          severity: S1
+          retryable: true
+          cause: "Database timeout or overload"
+          client_action: "Retry with exponential backoff"
+          server_action: "Alert; check DB health/capacity"
+
+  hr:
+    conventions:
+      code_format: "<DOMAIN>-<AREA>-<NNN>"
+      domain: "HRM"
+      areas:
+        EMP: "Employee"
+        PAY: "Payroll"
+        LEAVE: "Leave Management"
+        RL: "Rate limit"
+        VAL: "Validation"
+        INFRA: "Infrastructure"
+      severity_scale:
+        S1: "Critical outage/security risk"
+        S2: "Degraded experience or important failure"
+        S3: "Minor / client input issue"
+      retry_policy:
+        retryable_statuses_http: [408, 429, 500, 502, 503, 504]
+        grpc_retryable: ["Unavailable", "DeadlineExceeded"]
+
+    errors:
+      EMP:
+        - code: HR-EMP-001
+          key: EMPLOYEE_NOT_FOUND
+          http_status: 404
+          grpc_code: NotFound
+          message: "Employee not found"
+          severity: S2
+          retryable: false
+          cause: "Invalid employee ID"
+          client_action: "Check employee ID"
+          server_action: "Log info; monitor invalid access attempts"
+
+      PAY:
+        - code: HR-PAY-001
+          key: PAYROLL_PROCESS_FAIL
+          http_status: 500
+          grpc_code: Internal
+          message: "Payroll processing failed"
+          severity: S1
+          retryable: true
+          cause: "DB or external service failure"
+          client_action: "Retry later"
+          server_action: "Alert finance ops; investigate DB/services"
+
+      LEAVE:
+        - code: HR-LEAVE-001
+          key: LEAVE_REQUEST_INVALID
+          http_status: 400
+          grpc_code: InvalidArgument
+          message: "Invalid leave request"
+          severity: S3
+          retryable: false
+          cause: "Invalid date or quota"
+          client_action: "Correct leave request"
+          server_action: "Log debug; track invalid requests"
+
+defaults:
+  unknown_domain_key:
+    code: AUTH-VAL-999
+    http_status: 400
+    grpc_code: InvalidArgument
+    message: "Unknown domain error"
+  internal_fallback:
+    code: CORE-INF-000
+    http_status: 500
+    grpc_code: Internal
+    message: "Internal server error"

@@ -1,0 +1,43 @@
+version: 1
+updated_at: "2025-08-17"
+owner: platform-auth
+
+services:
+  all:
+    conventions:
+      code_format: "<DOMAIN>-<AREA>-<NNN>"
+      domain: "all"
+      areas:
+        GRPC: "GRPC"
+      severity_scale:
+        S1: "Critical outage/security risk"
+        S2: "Degraded experience or important failure"
+        S3: "Minor / client input issue"
+      retry_policy:
+        retryable_statuses_http: [408, 429, 500, 502, 503, 504]
+        grpc_retryable: ["Unavailable", "DeadlineExceeded"]
+
+    errors:
+      GRPC:
+        - code: AUTH-HAND-001
+          key: HANDSHAKE_INVALID_CLIENT_KEY
+          http_status: 400
+          grpc_code: InvalidArgument
+          message: "Invalid client public key"
+          severity: S3
+          retryable: false
+          cause: "Client sent malformed/unsupported public key"
+          client_action: "Validate/generate correct key and retry"
+          server_action: "Log warn with trace_id; no alert"
+
+defaults:
+  unknown_domain_key:
+    code: AUTH-VAL-999
+    http_status: 400
+    grpc_code: InvalidArgument
+    message: "Unknown domain error"
+  internal_fallback:
+    code: CORE-INF-000
+    http_status: 500
+    grpc_code: Internal
+    message: "Internal server error"

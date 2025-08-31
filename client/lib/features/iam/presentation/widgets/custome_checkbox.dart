@@ -34,7 +34,7 @@ class CustomeCheckbox extends StatelessWidget {
           child: Checkbox(
               checkColor: Colors.white,
               fillColor: WidgetStateProperty.resolveWith(getColor),
-              value: this.value,
+              value: value,
               side: BorderSide(color: Colors.blueGrey.shade100, width: 2),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(4)),
@@ -43,7 +43,7 @@ class CustomeCheckbox extends StatelessWidget {
         SizedBox(
           width: 5,
         ),
-        CustomText(text: this.text)
+        CustomText(text: text)
       ],
     );
   }

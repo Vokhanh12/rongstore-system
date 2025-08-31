@@ -13,43 +13,24 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// RedisSessionStore implements domain.SessionStore using Redis.
 type RedisSessionStore struct {
 	rdb *redis.Client
 	ttl time.Duration
 }
 
-// NewRedisSessionStore creates a new RedisSessionStore.
 func NewRedisSessionStore(rdb *redis.Client, ttl time.Duration) domain.SessionStore {
 	return &RedisSessionStore{rdb: rdb, ttl: ttl}
 }
 
-// Provider cho Wire: trả time.Duration trực tiếp
 func RedisTTLFromConfig(cfg *config.Config) time.Duration {
-	// giả sử cfg.RedisTTL là số giây (int)
 	return time.Duration(cfg.RedisTTL) * time.Second
 }
 
-// helper convert domain.Context -> context.Context
-func toStdContext(ctx domain.Context) context.Context {
-	if ctx == nil {
-		return context.Background()
-	}
-	// Nếu ctx là context.Context thì return trực tiếp
-	if c, ok := ctx.(context.Context); ok {
-		return c
-	}
-	return context.Background()
-}
-
-// sessionKey helper
 func sessionKey(sessionID string) string {
 	return "session:" + sessionID
 }
 
-// StoreSession lưu session vào Redis hash
-func (r *RedisSessionStore) StoreSession(ctx domain.Context, e *domain.SessionEntry) error {
-	c := toStdContext(ctx)
+func (r *RedisSessionStore) StoreSession(ctx context.Context, e *domain.SessionEntry) error {
 	key := sessionKey(e.SessionID)
 	fields := map[string]interface{}{
 		"client_pub": base64.StdEncoding.EncodeToString(e.ClientPub),
@@ -60,17 +41,15 @@ func (r *RedisSessionStore) StoreSession(ctx domain.Context, e *domain.SessionEn
 		"expiry":     e.Expiry.Unix(),
 	}
 
-	if err := r.rdb.HSet(c, key, fields).Err(); err != nil {
+	if err := r.rdb.HSet(ctx, key, fields).Err(); err != nil {
 		return err
 	}
-	return r.rdb.Expire(c, key, r.ttl).Err()
+	return r.rdb.Expire(ctx, key, r.ttl).Err()
 }
 
-// GetSession lấy session từ Redis
-func (r *RedisSessionStore) GetSession(ctx domain.Context, sessionID string) (*domain.SessionEntry, error) {
-	c := toStdContext(ctx)
+func (r *RedisSessionStore) GetSession(ctx context.Context, sessionID string) (*domain.SessionEntry, error) {
 	key := sessionKey(sessionID)
-	m, err := r.rdb.HGetAll(c, key).Result()
+	m, err := r.rdb.HGetAll(ctx, key).Result()
 	if err != nil || len(m) == 0 {
 		return nil, err
 	}
@@ -107,16 +86,12 @@ func (r *RedisSessionStore) GetSession(ctx domain.Context, sessionID string) (*d
 	}, nil
 }
 
-// DeleteSession xóa session khỏi Redis
-func (r *RedisSessionStore) DeleteSession(ctx domain.Context, sessionID string) error {
-	c := toStdContext(ctx)
+func (r *RedisSessionStore) DeleteSession(ctx context.Context, sessionID string) error {
 	key := sessionKey(sessionID)
-	return r.rdb.Del(c, key).Err()
+	return r.rdb.Del(ctx, key).Err()
 }
 
-// CheckAndRecordNonceAtomic sử dụng SETNX để record nonce atomically
-func (r *RedisSessionStore) CheckAndRecordNonceAtomic(ctx domain.Context, sessionID, nonceB64 string, windowSeconds int) (bool, error) {
-	c := toStdContext(ctx)
+func (r *RedisSessionStore) CheckAndRecordNonceAtomic(ctx context.Context, sessionID, nonceB64 string, windowSeconds int) (bool, error) {
 	nonceKey := sessionKey(sessionID) + ":nonce:" + nonceB64
-	return r.rdb.SetNX(c, nonceKey, "1", time.Duration(windowSeconds)*time.Second).Result()
+	return r.rdb.SetNX(ctx, nonceKey, "1", time.Duration(windowSeconds)*time.Second).Result()
 }

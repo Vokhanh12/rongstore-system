@@ -8,19 +8,18 @@ import (
 	"time"
 
 	"server/internal/iam/domain"
-	"server/pkg/errors"
+	"server/pkg/auth"
 	"server/pkg/logger"
 	"server/pkg/metrics"
+	"server/pkg/util/ctxutil"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
-	"google.golang.org/grpc/status"
 )
 
-// cached hostname to avoid repeated syscalls
 var hostnameCache string
 
 func init() {
@@ -31,7 +30,6 @@ func init() {
 	}
 }
 
-// GrpcTraceUnaryInterceptor extracts "x-trace-id" / "trace-id" from metadata or generates a UUID
 func GrpcTraceUnaryInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		var trace string
@@ -45,12 +43,12 @@ func GrpcTraceUnaryInterceptor() grpc.UnaryServerInterceptor {
 		if trace == "" {
 			trace = uuid.NewString()
 		}
-		ctx = errors.WithTraceID(ctx, trace)
+		ctx = ctxutil.WithTraceID(ctx, trace)
 		return handler(ctx, req)
 	}
 }
 
-// httpStatusToGRPCCode maps HTTP-like status to gRPC code
+// Chuyển HTTP status sang gRPC code
 func httpStatusToGRPCCode(httpStatus int) codes.Code {
 	switch {
 	case httpStatus == 401:
@@ -64,108 +62,110 @@ func httpStatusToGRPCCode(httpStatus int) codes.Code {
 	}
 }
 
-// UnaryServerInterceptor returns a gRPC interceptor with metrics + access logging + error translation.
-// - serviceName: name for metrics/logging
-// - store: domain.SessionStore (optional) used to enrich ctx with user_id and client IP
-func UnaryServerInterceptor(serviceName string, store domain.SessionStore) grpc.UnaryServerInterceptor {
+func UnaryServerInterceptor(serviceName string, store domain.SessionStore, rules []auth.GrpcRule) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		start := time.Now()
 		fullMethod := info.FullMethod
 		handlerName := handlerNameFromFullMethod(fullMethod)
+		traceID := ctxutil.TraceIDFromContext(ctx)
 
-		// metrics: inflight
 		metrics.InflightRequests.WithLabelValues(serviceName, handlerName).Inc()
 		defer metrics.InflightRequests.WithLabelValues(serviceName, handlerName).Dec()
 
-		// 1) extract session-id from incoming metadata (if any)
-		if md, ok := metadata.FromIncomingContext(ctx); ok {
-			if svals := md.Get("x-session-id"); len(svals) > 0 {
-				ctx = errors.WithSessionID(ctx, svals[0])
-			} else if svals := md.Get("session-id"); len(svals) > 0 {
-				ctx = errors.WithSessionID(ctx, svals[0])
+		md, _ := metadata.FromIncomingContext(ctx)
+		if err := auth.ValidateWithMetadata(md, fullMethod, rules); err != nil {
+			logger.LogAccess(ctx, logger.AccessParams{
+				Service:  serviceName,
+				Handler:  handlerName,
+				Method:   fullMethod,
+				HTTPCode: 401,
+				Status:   "Unauthenticated",
+				Extra: map[string]interface{}{
+					"reason": err.Error(),
+				},
+			})
+			return nil, err
+		}
+
+		// if md, ok := metadata.FromIncomingContext(ctx); ok {
+		// 	if err := ctxutil.ValidateMetadata(md, fullMethod, rules); err != nil {
+		// 		logger.LogAccess(ctx, logger.AccessParams{
+		// 			Service:  serviceName,
+		// 			Handler:  handlerName,
+		// 			Method:   fullMethod,
+		// 			HTTPCode: 401,
+		// 			Status:   "Unauthenticated",
+		// 			Extra: map[string]interface{}{
+		// 				"reason": err.Error(),
+		// 			},
+		// 		})
+		// 		return nil, err
+		// 	}
+
+		// 	if svals := md.Get("x-session-id"); len(svals) > 0 {
+		// 		ctx = ctxutil.WithSessionID(ctx, svals[0])
+		// 	} else if svals := md.Get("session-id"); len(svals) > 0 {
+		// 		ctx = ctxutil.WithSessionID(ctx, svals[0])
+		// 	}
+		// }
+
+		if sid := ctxutil.SessionIDFromContext(ctx); sid != "" && store != nil {
+			if se, err := store.GetSession(ctx, sid); err == nil && se != nil && se.UserID != "" {
+				ctx = ctxutil.WithUserID(ctx, se.UserID)
 			}
 		}
 
-		// 2) enrich ctx with user_id and optional clientIP from session store (best-effort)
-		var sessionIP string
-		if sid := errors.SessionIDFromContext(ctx); sid != "" && store != nil {
-			if se, err := store.GetSession(ctx, sid); err == nil && se != nil {
-				// store.GetSession returns domain.SessionEntry; keep only non-sensitive info
-				if se.UserID != "" {
-					ctx = errors.WithUserID(ctx, se.UserID)
-				}
-				if se.ClientIP != "" {
-					sessionIP = se.ClientIP
-				}
-			}
-		}
-
-		// 3) get peer IP as fallback (best-effort)
 		var peerIP string
 		if p, ok := peer.FromContext(ctx); ok && p != nil {
 			if addr, ok := p.Addr.(*net.TCPAddr); ok {
 				peerIP = addr.IP.String()
 			} else {
-				// fallback to string (may include port)
 				peerIP = p.Addr.String()
 				if host, _, err := net.SplitHostPort(peerIP); err == nil {
 					peerIP = host
 				}
 			}
 		}
-		// prefer session IP if available (set by store)
-		if sessionIP != "" {
-			peerIP = sessionIP
-		}
 
-		// 4) call actual handler
 		resp, err := handler(ctx, req)
 		latencyMs := time.Since(start).Milliseconds()
 
-		// 5) error handling + metrics
-		statusLabel := "OK"
-		var appErr *errors.AppError
-		if err != nil {
-			appErr = errors.TranslateDomainError(ctx, err)
-			if appErr == nil {
-				appErr = &errors.AppError{
-					Code:    "UNKNOWN",
-					Status:  500,
-					Message: "internal error",
-					TraceID: errors.TraceIDFromContext(ctx),
-				}
-			}
-			if st, ok := status.FromError(err); ok {
-				statusLabel = st.Code().String()
-			} else {
-				statusLabel = "ERROR"
-			}
-			metrics.ErrorsTotal.WithLabelValues(serviceName, handlerName, appErr.Code).Inc()
-		}
+		// httpCode := 200
+		// statusLabel := "OK"
+		// var errorCode string
 
+		// if err != nil {
+		// 	var be *ctxutil.BusinessError
+		// 	if errors.As(err, &be) && be != nil {
+		// 		httpCode = be.Status
+		// 		statusLabel = "Error"
+		// 		errorCode = be.Code
+		// 		grpcCode := httpStatusToGRPCCode(be.Status)
+		// 		st := status.New(grpcCode, fmt.Sprintf("%s|%s", be.Code, be.Message))
+		// 		err = st.Err()
+		// 		logger.LogError(ctx, handlerName, be.Message, "", be.WithExtra(map[string]interface{}{"method": fullMethod}).Data)
+		// 	} else {
+		// 		be = &ctxutil.BusinessError{
+		// 			Code:      "CORE-INF-000",
+		// 			Message:   err.Error(),
+		// 			Status:    500,
+		// 			Severity:  "S1",
+		// 			Retryable: true,
+		// 		}
+		// 		httpCode = 500
+		// 		statusLabel = "InternalError"
+		// 		errorCode = be.Code
+		// 		err = status.Errorf(codes.Internal, err.Error())
+		// 		logger.LogError(ctx, handlerName, be.Message, "", be.WithExtra(map[string]interface{}{"method": fullMethod}).Data)
+		// 	}
+		// }
+
+		// Metrics
 		metrics.RequestsTotal.WithLabelValues(serviceName, handlerName, fullMethod, statusLabel).Inc()
 		metrics.RequestDuration.WithLabelValues(serviceName, handlerName, fullMethod).Observe(float64(latencyMs) / 1000.0)
 
-		// 6) prepare access log fields (no duplication here)
-		// env/instance/user/session/trace are added by logger.LogAccess by reading ctx and helpers,
-		// so we avoid re-adding them here to prevent duplicates.
-		httpCode := 200
-		if err != nil {
-			switch statusLabel {
-			case "InvalidArgument":
-				httpCode = 400
-			case "Unauthenticated":
-				httpCode = 401
-			case "PermissionDenied":
-				httpCode = 403
-			case "NotFound":
-				httpCode = 404
-			default:
-				httpCode = 500
-			}
-		}
-
-		accessParams := logger.AccessParams{
+		// Logging access
+		logger.LogAccess(ctx, logger.AccessParams{
 			Service:   serviceName,
 			Handler:   handlerName,
 			Method:    fullMethod,
@@ -173,24 +173,16 @@ func UnaryServerInterceptor(serviceName string, store domain.SessionStore) grpc.
 			Status:    statusLabel,
 			LatencyMS: latencyMs,
 			IP:        peerIP,
-			// keep Extra empty here to avoid duplicate instance/env/session/user entries;
-			// use logger.LogAccess's internal enrichment.
-			Extra: map[string]interface{}{},
-		}
+			Extra: map[string]interface{}{
+				"trace_id":   traceID,
+				"error_code": errorCode,
+			},
+		})
 
-		logger.LogAccess(ctx, accessParams)
-
-		// 7) translate domain app error -> grpc status for return
-		if err == nil {
-			return resp, nil
-		}
-		grpcCode := httpStatusToGRPCCode(appErr.Status)
-		st := status.New(grpcCode, strings.Join([]string{appErr.Code, appErr.Message}, "|"))
-		return nil, st.Err()
+		return resp, err
 	}
 }
 
-// handlerNameFromFullMethod extracts short handler name
 func handlerNameFromFullMethod(fullMethod string) string {
 	if fullMethod == "" {
 		return "unknown"

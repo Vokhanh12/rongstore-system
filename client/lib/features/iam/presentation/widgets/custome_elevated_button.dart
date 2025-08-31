@@ -27,13 +27,13 @@ class CustomeElevatedButton extends StatelessWidget {
         height: height,
         child: ElevatedButton(
           onPressed: () {},
-          child: CustomText(text: text),
           style: ButtonStyle(
-            shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+            shape: WidgetStateProperty.all<RoundedRectangleBorder>(
                 RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.0),
             )),
           ),
+          child: CustomText(text: text),
         ));
   }
 }

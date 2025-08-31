@@ -14,12 +14,12 @@ class CustomTextFormField extends StatefulWidget {
   final String? Function(String?)? validator;
 
   const CustomTextFormField({
-    Key? key,
+    super.key,
     required this.label,
     this.title,
     this.svgUrl,
     this.validator,
-  }) : super(key: key);
+  });
 
   @override
   _CustomTextFormFieldState createState() => _CustomTextFormFieldState();

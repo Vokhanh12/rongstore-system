@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type SessionEntry struct {
 	SessionID string
@@ -18,8 +21,8 @@ type SessionEntry struct {
 }
 
 type SessionStore interface {
-	StoreSession(ctx Context, e *SessionEntry) error
-	GetSession(ctx Context, sessionID string) (*SessionEntry, error)
-	DeleteSession(ctx Context, sessionID string) error
-	CheckAndRecordNonceAtomic(ctx Context, sessionID, nonceB64 string, windowSeconds int) (bool, error)
+	StoreSession(ctx context.Context, e *SessionEntry) error
+	GetSession(ctx context.Context, sessionID string) (*SessionEntry, error)
+	DeleteSession(ctx context.Context, sessionID string) error
+	CheckAndRecordNonceAtomic(ctx context.Context, sessionID, nonceB64 string, windowSeconds int) (bool, error)
 }

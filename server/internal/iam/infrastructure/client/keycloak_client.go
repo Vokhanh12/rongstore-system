@@ -23,7 +23,7 @@ type KeycloakClient struct {
 	Health  string
 }
 
-func asStdContext(ctx domain.Context) context.Context {
+func asStdContext(ctx context.Context) context.Context {
 	if ctx == nil {
 		return context.Background()
 	}
@@ -33,7 +33,7 @@ func asStdContext(ctx domain.Context) context.Context {
 	return context.Background()
 }
 
-func (kc *KeycloakClient) GetToken(ctx domain.Context, username, password string) (*domain.Token, error) {
+func (kc *KeycloakClient) GetToken(ctx context.Context, username, password string) (*domain.Token, error) {
 	stdCtx := asStdContext(ctx)
 
 	form := url.Values{}
@@ -71,7 +71,7 @@ func (kc *KeycloakClient) GetToken(ctx domain.Context, username, password string
 	return &token, nil
 }
 
-func (kc *KeycloakClient) RefreshToken(ctx domain.Context, refreshToken string) (*domain.Token, error) {
+func (kc *KeycloakClient) RefreshToken(ctx context.Context, refreshToken string) (*domain.Token, error) {
 	stdCtx := asStdContext(ctx)
 
 	form := url.Values{}

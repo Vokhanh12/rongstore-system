@@ -108,8 +108,8 @@ class LoginResponse extends $pb.GeneratedMessage {
       _omitMessageNames ? '' : 'LoginResponse',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'iam.v1'),
       createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'accessToken')
-    ..aOS(2, _omitFieldNames ? '' : 'refreshToken')
+    ..aOS(2, _omitFieldNames ? '' : 'accessToken')
+    ..aOS(3, _omitFieldNames ? '' : 'refreshToken')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -133,23 +133,23 @@ class LoginResponse extends $pb.GeneratedMessage {
       $pb.GeneratedMessage.$_defaultFor<LoginResponse>(create);
   static LoginResponse? _defaultInstance;
 
-  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
   $core.String get accessToken => $_getSZ(0);
-  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
   set accessToken($core.String value) => $_setString(0, value);
-  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
   $core.bool hasAccessToken() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearAccessToken() => $_clearField(1);
+  @$pb.TagNumber(2)
+  void clearAccessToken() => $_clearField(2);
 
-  @$pb.TagNumber(2)
+  @$pb.TagNumber(3)
   $core.String get refreshToken => $_getSZ(1);
-  @$pb.TagNumber(2)
+  @$pb.TagNumber(3)
   set refreshToken($core.String value) => $_setString(1, value);
-  @$pb.TagNumber(2)
+  @$pb.TagNumber(3)
   $core.bool hasRefreshToken() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearRefreshToken() => $_clearField(2);
+  @$pb.TagNumber(3)
+  void clearRefreshToken() => $_clearField(3);
 }
 
 class HandshakeRequest extends $pb.GeneratedMessage {

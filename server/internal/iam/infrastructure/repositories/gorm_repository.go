@@ -1,4 +1,3 @@
-// infrastructure/repositories/gorm_repository.go
 package repositories
 
 import (

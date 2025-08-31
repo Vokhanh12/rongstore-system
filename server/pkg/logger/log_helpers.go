@@ -3,8 +3,7 @@ package logger
 import (
 	"context"
 	"os"
-
-	"server/pkg/errors"
+	"server/pkg/util/ctxutil"
 
 	"go.uber.org/zap"
 )
@@ -26,7 +25,7 @@ func LogAccess(ctx context.Context, p AccessParams) {
 		zap.String("service", p.Service),
 		zap.String("handler", p.Handler),
 		zap.String("method", p.Method),
-		zap.String("trace_id", errors.TraceIDFromContext(ctx)),
+		zap.String("trace_id", ctxutil.GetIDFromContext(ctx)),
 		zap.String("status", p.Status),
 		zap.Int64("latency_ms", p.LatencyMS),
 		zap.Int("http_status", p.HTTPCode),
@@ -34,22 +33,24 @@ func LogAccess(ctx context.Context, p AccessParams) {
 		zap.String("user_agent", p.UserAgent),
 		zap.String("instance", instance()),
 		zap.String("env", env()),
+		zap.String("event.type", "access"),
+		zap.String("event.action", "request_handled"),
 	}
-	if sid := errors.SessionIDFromContext(ctx); sid != "" {
+	if sid := ctxutil.SessionIDFromContext(ctx); sid != "" {
 		fields = append(fields, zap.String("session_id", sid))
 	}
-	if uid := errors.UserIDFromContext(ctx); uid != "" {
+	if uid := ctxutil.UserIDFromContext(ctx); uid != "" {
 		fields = append(fields, zap.String("user_id", uid))
 	}
 	for k, v := range p.Extra {
 		fields = append(fields, zap.Any(k, v))
 	}
-	L.With(fields...).Info("request_handled")
+	L.With(fields...).Info("request handled")
 }
 
 type AuditParams struct {
 	Service string
-	Event   string
+	Action  string
 	Msg     string
 	Extra   map[string]interface{}
 }
@@ -57,37 +58,38 @@ type AuditParams struct {
 func LogAudit(ctx context.Context, p AuditParams) {
 	fields := []zap.Field{
 		zap.String("service", p.Service),
-		zap.String("event", p.Event),
-		zap.String("trace_id", errors.TraceIDFromContext(ctx)),
+		zap.String("trace_id", ctxutil.GetIDFromContext(ctx)),
 		zap.String("instance", instance()),
 		zap.String("env", env()),
+		zap.String("event.type", "audit"),
+		zap.String("event.action", p.Action),
 	}
-	if sid := errors.SessionIDFromContext(ctx); sid != "" {
+	if sid := ctxutil.SessionIDFromContext(ctx); sid != "" {
 		fields = append(fields, zap.String("session_id", sid))
 	}
-	if uid := errors.UserIDFromContext(ctx); uid != "" {
+	if uid := ctxutil.UserIDFromContext(ctx); uid != "" {
 		fields = append(fields, zap.String("user_id", uid))
 	}
 	for k, v := range p.Extra {
 		fields = append(fields, zap.Any(k, v))
 	}
-	// Audit goes to audit core (we used NewTee above to send all info-level to both access+audit sinks).
 	L.With(fields...).Info(p.Msg)
 }
 
-func LogSecurity(ctx context.Context, event, reason, msg string, extra map[string]interface{}) {
+func LogSecurity(ctx context.Context, action, reason, msg string, extra map[string]interface{}) {
 	fields := []zap.Field{
-		zap.String("service", instance()), // service can be passed as param instead
-		zap.String("event", event),
-		zap.String("reason", reason),
-		zap.String("trace_id", errors.TraceIDFromContext(ctx)),
+		zap.String("service", instance()),
+		zap.String("trace_id", ctxutil.GetIDFromContext(ctx)),
 		zap.String("instance", instance()),
 		zap.String("env", env()),
+		zap.String("event.type", "security"),
+		zap.String("event.action", action),
+		zap.String("security.reason", reason),
 	}
-	if sid := errors.SessionIDFromContext(ctx); sid != "" {
+	if sid := ctxutil.SessionIDFromContext(ctx); sid != "" {
 		fields = append(fields, zap.String("session_id", sid))
 	}
-	if uid := errors.UserIDFromContext(ctx); uid != "" {
+	if uid := ctxutil.UserIDFromContext(ctx); uid != "" {
 		fields = append(fields, zap.String("user_id", uid))
 	}
 	for k, v := range extra {
@@ -96,34 +98,33 @@ func LogSecurity(ctx context.Context, event, reason, msg string, extra map[strin
 	L.With(fields...).Warn(msg)
 }
 
-func LogError(ctx context.Context, event, errMsg string, stack string, extra map[string]interface{}) {
+func LogError(ctx context.Context, action, errMsg string, stack string, extra map[string]interface{}) {
 	fields := []zap.Field{
 		zap.String("service", instance()),
-		zap.String("event", event),
-		zap.String("trace_id", errors.TraceIDFromContext(ctx)),
+		zap.String("trace_id", ctxutil.GetIDFromContext(ctx)),
 		zap.String("instance", instance()),
 		zap.String("env", env()),
-		zap.String("error", errMsg),
-		zap.String("stack", stack),
+		zap.String("event.type", "error"),
+		zap.String("event.action", action),
+		zap.String("error.message", errMsg),
+		zap.String("error.stack", stack),
 	}
-	if sid := errors.SessionIDFromContext(ctx); sid != "" {
+	if sid := ctxutil.SessionIDFromContext(ctx); sid != "" {
 		fields = append(fields, zap.String("session_id", sid))
 	}
-	if uid := errors.UserIDFromContext(ctx); uid != "" {
+	if uid := ctxutil.UserIDFromContext(ctx); uid != "" {
 		fields = append(fields, zap.String("user_id", uid))
 	}
 	for k, v := range extra {
 		fields = append(fields, zap.Any(k, v))
 	}
-	L.With(fields...).Error("error_event")
+	L.With(fields...).Error("error occurred")
 }
 
-// small helpers
 func instance() string {
 	if L == nil {
 		return "unknown"
 	}
-	// cached hostname used in observability package — reuse env var if set
 	if h := os.Getenv("INSTANCE"); h != "" {
 		return h
 	}
@@ -132,6 +133,7 @@ func instance() string {
 	}
 	return "unknown"
 }
+
 func env() string {
 	if e := os.Getenv("ENV"); e != "" {
 		return e
