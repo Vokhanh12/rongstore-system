@@ -105,7 +105,7 @@ class _MyAppState extends State<MyApp> {
           title: 'Nibbles',
           debugShowCheckedModeBanner: false,
           onGenerateRoute: AppRouter.onGenerateRoute,
-          initialRoute: AppRouter.game,
+          initialRoute: AppRouter.splash,
           theme: ThemeData(
             fontFamily: AppStrings.fontFamily,
             scaffoldBackgroundColor: AppColors.MA_SFBACKGROUP_COLOR,

@@ -1,26 +1,31 @@
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui';
-
 import 'package:flame/events.dart';
 import 'package:flame/experimental.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:rongchoi_application/features/game/ecs/system/collision_system.dart';
 import 'package:rongchoi_application/features/game/ecs/system/debug_render_system.dart';
 import 'package:rongchoi_application/features/game/ecs/system/movement_system.dart';
-import 'package:rongchoi_application/features/game/ecs/system/network_sync_system.dart';
-import 'package:rongchoi_application/features/game/ecs/system/socket_service.dart';
 import 'package:rongchoi_application/features/game/ecs/system/udp_service.dart';
 
 import 'ecs/component.dart';
 import 'ecs/entity.dart';
-
 import 'package:flame/components.dart' hide World;
 import 'ecs/entity.dart' as ecs;
 import 'ecs/component.dart' as comp;
+
+class Snapshot {
+  final double timestamp;
+  final double x;
+  final double y;
+
+  Snapshot({required this.timestamp, required this.x, required this.y});
+}
 
 class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
   final ecs.World ecsWorld = ecs.World();
@@ -28,7 +33,6 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
   late final MovementSystem movementSystem;
   late final CollisionSystem collisionSystem;
   late final DebugRenderSystem renderSystem;
-  late final NetworkSyncSystem netSystem;
 
   double worldW = 0;
   double worldH = 0;
@@ -36,7 +40,6 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
   static const double speed = 200.0;
   static const double arrivalThreshold = 6.0;
 
-  // Các vùng
   double shopTop = 0.0;
   double shopBottom = 0.0;
   double walkTop = 0.0;
@@ -45,15 +48,16 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
   double streetBottom = 0.0;
 
   Entity? localPlayer;
-
   double? _targetX;
   double? _targetY;
 
-  SocketService? _socket;
   UdpService? _udp;
-
-  final sendInterval = 0.1;
+  final sendInterval = 0.05; // gửi mỗi 50ms là mượt
   double _sendAcc = 0;
+
+  final String playerId = Uuid().v4(); 
+  final Map<String, Entity> remotePlayers = {};
+  final Map<String, List<Snapshot>> remoteSnapshots = {}; // lưu snapshot để interpolation
 
   @override
   Future<void> onLoad() async {
@@ -63,63 +67,108 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
     worldH = size.y;
 
     final sectionHeight = worldH / 3;
-
     shopTop = 0;
     shopBottom = sectionHeight;
-
     walkTop = shopBottom;
     walkBottom = walkTop + sectionHeight;
-
     streetTop = walkBottom;
     streetBottom = worldH;
 
-    camera.setBounds(
-      Rectangle.fromLTRB(0, 0, worldW, worldH),
-      considerViewport: true,
-    );
+    camera.setBounds(Rectangle.fromLTRB(0, 0, worldW, worldH),
+        considerViewport: true);
 
     movementSystem = MovementSystem(worldWidth: worldW, worldHeight: worldH);
     collisionSystem = CollisionSystem();
     renderSystem = DebugRenderSystem();
 
-    //_socket = SocketService();
-    //netSystem = NetworkSyncSystem(socket: _socket!);
-
-    _udp =
-        UdpService(serverAddr: InternetAddress("192.168.1.4"), serverPort: 8080);
+    _udp = UdpService(
+        serverAddr: InternetAddress("192.168.1.18"), serverPort: 8080);
 
     try {
-      //await _socket!.connect('ws://6a3104eb7b7a.ngrok-free.app/game');
       await _udp!.connect();
-      print('Udp connect success');
+      print('UDP connect success');
     } catch (e) {
-      //print('Socket connect error: $e');
-      print('Udp connect error: $e');
+      print('UDP connect error: $e');
     }
-    //netSystem.start(ecsWorld);
-    //_udp.send(ecsWorld)
-    _spawnDemoWorld();
+
+    _spawnLocalPlayer();
+
+    // Listen chỉ một lần, không lắng nghe mỗi frame
+    _udp!.messages.listen((msg) {
+      _handleIncoming(msg);
+    });
   }
 
-  void _spawnDemoWorld() {
+  void _spawnLocalPlayer() {
     final me = ecsWorld.create()
       ..add(PlayerTag())
-      ..add(NetworkId('local'))
+      ..add(NetworkId(playerId))
       ..add(Position(300.0, walkTop + 20.0))
       ..add(comp.Velocity())
       ..add(Size2D(28.0, 28.0))
       ..add(CollisionBox())
-      ..add(Appearance(const Color(0xFF42A5F5))); // xanh dương
+      ..add(Appearance(const Color(0xFF42A5F5)));
     localPlayer = me;
+  }
 
-    // obstacles
-    for (int i = 0; i < 6; i++) {
-      ecsWorld.create()
-        ..add(Position(200.0 + i * 140.0, 520.0))
-        ..add(Size2D(80.0, 40.0))
-        ..add(CollisionBox(isStatic: true))
-        ..add(Appearance(const Color(0xFF8D6E63)));
+  void _handleIncoming(Map<String, dynamic> msg) {
+    final type = msg['type'];
+    final timestamp = DateTime.now().millisecondsSinceEpoch / 1000.0;
+
+    if (type == 'snapshot' && msg['players'] is List) {
+      final players = (msg['players'] as List).cast<Map<String, dynamic>>();
+      for (var p in players) {
+        final id = p['id'] as String;
+        if (id == playerId) continue; // bỏ qua local player
+
+        final targetX = (p['x'] as num?)?.toDouble() ?? 0.0;
+        final targetY = (p['y'] as num?)?.toDouble() ?? 0.0;
+
+        if (!remotePlayers.containsKey(id)) {
+          final e = ecsWorld.create()
+            ..add(PlayerTag())
+            ..add(NetworkId(id))
+            ..add(Position(targetX, targetY))
+            ..add(Size2D(28.0, 28.0))
+            ..add(CollisionBox())
+            ..add(Appearance(const Color.fromARGB(255, 255, 0, 89)));
+          remotePlayers[id] = e;
+          remoteSnapshots[id] = [Snapshot(timestamp: timestamp, x: targetX, y: targetY)];
+        } else {
+          remoteSnapshots[id]!.add(Snapshot(timestamp: timestamp, x: targetX, y: targetY));
+          if (remoteSnapshots[id]!.length > 5) remoteSnapshots[id]!.removeAt(0); // giữ 5 snapshot
+        }
+      }
     }
+  }
+
+  void _updateRemotePlayers(double dt) {
+    final now = DateTime.now().millisecondsSinceEpoch / 1000.0;
+    remotePlayers.forEach((id, entity) {
+      final pos = entity.get<Position>();
+      final snapshots = remoteSnapshots[id];
+      if (pos != null && snapshots != null && snapshots.length >= 2) {
+        // Lấy snapshot gần nhất trước và sau thời điểm hiện tại - delay 100ms
+        final renderTime = now - 0.1;
+        Snapshot? prev, next;
+        for (int i = 0; i < snapshots.length - 1; i++) {
+          if (snapshots[i].timestamp <= renderTime && snapshots[i+1].timestamp >= renderTime) {
+            prev = snapshots[i];
+            next = snapshots[i+1];
+            break;
+          }
+        }
+        if (prev != null && next != null) {
+          final t = (renderTime - prev.timestamp) / (next.timestamp - prev.timestamp);
+          pos.x = prev.x + (next.x - prev.x) * t;
+          pos.y = prev.y + (next.y - prev.y) * t;
+        } else if (snapshots.isNotEmpty) {
+          // fallback: lerp đơn giản
+          pos.x += (snapshots.last.x - pos.x) * 0.15;
+          pos.y += (snapshots.last.y - pos.y) * 0.15;
+        }
+      }
+    });
   }
 
   @override
@@ -132,7 +181,6 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
 
     movementSystem.update(ecsWorld, dt);
     collisionSystem.update(ecsWorld);
-    //netSystem.update(ecsWorld, dt);
 
     final p = localPlayer?.get<Position>();
     final s = localPlayer?.get<Size2D>();
@@ -142,37 +190,22 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
       camera.moveTo(Vector2(p.x, p.y));
     }
 
-    if (localPlayer != null && _targetX != null && _targetY != null) {
-      final pos = localPlayer!.get<Position>()!;
-      final dx = _targetX! - pos.x;
-      final dy = _targetY! - pos.y;
-      final dist = math.sqrt(dx * dx + dy * dy);
-      if (dist <= arrivalThreshold) {
-        final vel = localPlayer!.get<comp.Velocity>();
-        if (vel != null) {
-          vel.dx = 0;
-          vel.dy = 0;
-        }
-        _targetX = null;
-        _targetY = null;
-      }
-    }
-
     _sendAcc += dt;
     if (_sendAcc >= sendInterval) {
       _sendAcc = 0;
-
       if (localPlayer != null) {
         final pos = localPlayer!.get<Position>()!;
         _udp?.send({
           'type': 'player_update',
-          'id': 'local',
+          'id': playerId,
           'x': pos.x,
           'y': pos.y,
         });
-        print('test3');
       }
     }
+
+    // update remote players với interpolation
+    _updateRemotePlayers(dt);
   }
 
   void _setVelocityTowardsTarget() {
@@ -202,32 +235,21 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
     super.render(canvas);
     renderSystem.render(ecsWorld, canvas);
 
-    // Vùng 1 - đỏ
-    canvas.drawRect(
-      Rect.fromLTWH(0, shopTop, worldW, shopBottom - shopTop),
-      Paint()..color = const Color(0x55FF0000),
-    );
+    canvas.drawRect(Rect.fromLTWH(0, shopTop, worldW, shopBottom - shopTop),
+        Paint()..color = const Color(0x55FF0000));
 
-    // Vùng 2 - xanh lá
-    canvas.drawRect(
-      Rect.fromLTWH(0, walkTop, worldW, walkBottom - walkTop),
-      Paint()..color = const Color.fromARGB(84, 55, 255, 0),
-    );
+    canvas.drawRect(Rect.fromLTWH(0, walkTop, worldW, walkBottom - walkTop),
+        Paint()..color = const Color.fromARGB(84, 55, 255, 0));
 
-    // Vùng 3 - xanh dương
     canvas.drawRect(
-      Rect.fromLTWH(0, streetTop, worldW, streetBottom - streetTop),
-      Paint()..color = const Color.fromARGB(83, 3, 24, 255),
-    );
+        Rect.fromLTWH(0, streetTop, worldW, streetBottom - streetTop),
+        Paint()..color = const Color.fromARGB(83, 3, 24, 255));
   }
 
   @override
   void onTapDown(TapDownInfo info) {
     final tapPos = info.eventPosition.global;
-
-    if (tapPos.y < walkTop || tapPos.y > walkBottom) {
-      return;
-    }
+    if (tapPos.y < walkTop || tapPos.y > walkBottom) return;
 
     _targetX = tapPos.x;
     _targetY = tapPos.y;
@@ -235,8 +257,7 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
 
   @override
   void onRemove() {
-    //netSystem.dispose();
-    _socket?.close();
+    _udp?.close();
     super.onRemove();
   }
 }
