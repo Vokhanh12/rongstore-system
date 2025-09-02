@@ -23,7 +23,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      _nextScreen();
+      //_nextScreen();
     });
     super.initState();
   }

@@ -200,6 +200,12 @@
       "languageVersion": "3.1"
     },
     {
+      "name": "flame",
+      "rootUri": "file:///Users/vokhanh12/.pub-cache/hosted/pub.dev/flame-1.30.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
       "name": "flat_buffers",
       "rootUri": "file:///Users/vokhanh12/.pub-cache/hosted/pub.dev/flat_buffers-23.5.26",
       "packageUri": "lib/",
@@ -279,7 +285,7 @@
     },
     {
       "name": "http",
-      "rootUri": "file:///Users/vokhanh12/.pub-cache/hosted/pub.dev/http-1.3.0",
+      "rootUri": "file:///Users/vokhanh12/.pub-cache/hosted/pub.dev/http-1.5.0",
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
@@ -402,6 +408,12 @@
       "rootUri": "file:///Users/vokhanh12/.pub-cache/hosted/pub.dev/objectbox_generator-4.1.0",
       "packageUri": "lib/",
       "languageVersion": "2.18"
+    },
+    {
+      "name": "ordered_set",
+      "rootUri": "file:///Users/vokhanh12/.pub-cache/hosted/pub.dev/ordered_set-8.0.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
     },
     {
       "name": "package_config",
@@ -534,6 +546,18 @@
       "rootUri": "file:///opt/homebrew/Caskroom/flutter/3.29.2/flutter/bin/cache/pkg/sky_engine",
       "packageUri": "lib/",
       "languageVersion": "3.7"
+    },
+    {
+      "name": "socket_io_client",
+      "rootUri": "file:///Users/vokhanh12/.pub-cache/hosted/pub.dev/socket_io_client-3.1.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "socket_io_common",
+      "rootUri": "file:///Users/vokhanh12/.pub-cache/hosted/pub.dev/socket_io_common-3.1.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
     },
     {
       "name": "source_gen",
@@ -710,7 +734,7 @@
       "languageVersion": "3.6"
     }
   ],
-  "generated": "2025-08-14T08:21:02.189959Z",
+  "generated": "2025-09-02T05:41:48.579777Z",
   "generator": "pub",
   "generatorVersion": "3.7.2",
   "flutterRoot": "file:///opt/homebrew/Caskroom/flutter/3.29.2/flutter",

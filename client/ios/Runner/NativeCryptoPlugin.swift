@@ -1,3 +1,10 @@
+//
+//  NativeCryptoPlugin.swift
+//  Runner
+//
+//  Created by Nguyen Vo Khanh on 2/9/25.
+//
+
 import Flutter
 import UIKit
 import CryptoKit
@@ -151,7 +158,7 @@ public class NativeCryptoPlugin: NSObject, FlutterPlugin {
     guard let sharedData = SecKeyCopyKeyExchangeResult(privateKey,
                                                        SecKeyAlgorithm.ecdhKeyExchangeStandardX963SHA256,
                                                        serverPubKey,
-                                                       nil,
+                                                       [:] as CFDictionary,
                                                        &error) as Data? else {
       // fallback: compute raw ECDH then SHA256 externally if needed
       throw error!.takeRetainedValue() as Error
