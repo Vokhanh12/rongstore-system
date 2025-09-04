@@ -1,5 +1,6 @@
 import 'dart:ui';
-import 'package:flutter/material.dart';
+import 'package:flame/game.dart';
+import 'package:flutter/material.dart' as mtr;
 import 'package:rongchoi_application/features/game/ecs/component.dart';
 import 'package:rongchoi_application/features/game/ecs/entity.dart';
 
@@ -21,7 +22,7 @@ class DebugRenderSystem {
         canvas.drawRect(rect, fillPaint);
 
         final strokePaint = Paint()
-          ..color = Colors.black
+          ..color = mtr.Colors.black
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.5;
         canvas.drawRect(rect, strokePaint);

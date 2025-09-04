@@ -143,8 +143,8 @@ func handleUDP(conn *net.UDPConn) {
 			clients[msg.ID] = addr
 			clientsMu.Unlock()
 
-			// log.Printf("%s - Received update from player %s: X=%.2f Y=%.2f Addr=%s\n",
-			// 	time.Now().Format(time.RFC3339), msg.ID, msg.X, msg.Y, addr)
+			log.Printf("%s - Received update from player %s: X=%.2f Y=%.2f Addr=%s\n",
+				time.Now().Format(time.RFC3339), msg.ID, msg.X, msg.Y, addr)
 		} else {
 			log.Printf("%s - Unknown message type from %s: %s\n",
 				time.Now().Format(time.RFC3339), addr, msg.Type)
@@ -170,7 +170,7 @@ func broadcastSnapshots(conn *net.UDPConn) {
 		}
 		data, err := json.Marshal(snapshot)
 		if err != nil {
-			//	log.Println(time.Now().Format(time.RFC3339), "json marshal error:", err)
+			log.Println(time.Now().Format(time.RFC3339), "json marshal error:", err)
 			continue
 		}
 
@@ -181,8 +181,8 @@ func broadcastSnapshots(conn *net.UDPConn) {
 				log.Printf("%s - write error to player %s (%s): %v\n",
 					time.Now().Format(time.RFC3339), id, addr, err)
 			} else {
-				// log.Printf("%s - Sent snapshot to player %s (%s) with %d players\n",
-				// 	time.Now().Format(time.RFC3339), id, addr, len(playerList))
+				log.Printf("%s - Sent snapshot to player %s (%s) with %d players\n",
+					time.Now().Format(time.RFC3339), id, addr, len(playerList))
 			}
 		}
 		clientsMu.Unlock()
@@ -190,6 +190,7 @@ func broadcastSnapshots(conn *net.UDPConn) {
 }
 
 func main() {
+
 	addr := net.UDPAddr{
 		Port: 8080,
 		IP:   net.ParseIP("0.0.0.0"),

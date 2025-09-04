@@ -1,8 +1,10 @@
 import 'dart:ui';
+
 import '../component.dart';
 import '../entity.dart';
 
 class RenderSystem {
+
   void render(World world, Canvas canvas) {
     for (final e in world.query([Position, Size2D, Appearance])) {
       final pos = e.get<Position>()!;
@@ -19,4 +21,6 @@ class RenderSystem {
       canvas.drawRect(rect, paint);
     }
   }
+
+
 }

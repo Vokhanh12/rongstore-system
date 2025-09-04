@@ -16,6 +16,15 @@ class MovementSystem {
 
       pos.x = pos.x.clamp(0, worldWidth);
       pos.y = pos.y.clamp(0, worldHeight);
+
+      final dir = e.get<Direction>();
+      if (dir != null) {
+        if (vel.dx < 0) {
+          dir.facingLeft = true;
+        } else if (vel.dx > 0) {
+          dir.facingLeft = false;
+        }
+      }
     }
   }
 }
