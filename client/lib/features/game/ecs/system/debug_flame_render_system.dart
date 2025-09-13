@@ -50,11 +50,12 @@ class DebugFlameRenderSystem {
 
   void sync(World world) {
     for (final e in world.entities) {
-      // Nếu entity mới có animation nhưng chưa cache thì tạo sprite
       if (!cache.containsKey(e)) {
         final animData = e.get<AnimationData>();
         final pos = e.get<Position>();
         final size = e.get<Size2D>();
+        final cusSprite = e.get<CustomSprite>();
+
 
         if (animData != null && pos != null) {
           final image = game.images.fromCache(animData.asset);
@@ -81,7 +82,10 @@ class DebugFlameRenderSystem {
 
           cache[e] = flameComp;
           game.add(flameComp);
-        }
+        } 
+
+
+
       }
 
       final pos = e.get<Position>();

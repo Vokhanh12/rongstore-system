@@ -59,3 +59,9 @@ class Direction extends Component {
   bool facingLeft;
   Direction({this.facingLeft = false});
 }
+
+class CustomSprite extends Component{
+  final Sprite sprite;
+
+  CustomSprite(this.sprite); 
+}
