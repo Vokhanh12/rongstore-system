@@ -27,7 +27,6 @@ class DebugFlameRenderSystem {
           ),
         );
 
-        // ví dụ: lấy animation ở row 0
         final anim = spriteSheet.createAnimation(
           row: 0,
           stepTime: animData.stepTime,
@@ -50,6 +49,7 @@ class DebugFlameRenderSystem {
 
   void sync(World world) {
     for (final e in world.entities) {
+
       if (!cache.containsKey(e)) {
         final animData = e.get<AnimationData>();
         final pos = e.get<Position>();
@@ -83,9 +83,6 @@ class DebugFlameRenderSystem {
           cache[e] = flameComp;
           game.add(flameComp);
         } 
-
-
-
       }
 
       final pos = e.get<Position>();

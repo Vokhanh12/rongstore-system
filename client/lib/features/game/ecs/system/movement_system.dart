@@ -11,6 +11,7 @@ class MovementSystem {
     for (final e in world.query([Position, Velocity])) {
       final pos = e.get<Position>()!;
       final vel = e.get<Velocity>()!;
+      
       pos.x += vel.dx * dt;
       pos.y += vel.dy * dt;
 
@@ -28,3 +29,4 @@ class MovementSystem {
     }
   }
 }
+

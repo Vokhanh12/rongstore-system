@@ -8,14 +8,16 @@ import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flame/components.dart' hide World;
+import 'package:flame_rive/flame_rive.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:rongchoi_application/core/constants/game_assets.dart';
 import 'package:rongchoi_application/features/game/ecs/system/collision_system.dart';
 import 'package:rongchoi_application/features/game/ecs/system/debug_flame_render_system.dart';
-import 'package:rongchoi_application/features/game/ecs/system/debug_render_system.dart';
+import 'package:rongchoi_application/features/game/ecs/system/flame_system.dart';
 import 'package:rongchoi_application/features/game/ecs/system/movement_system.dart';
 import 'package:rongchoi_application/features/game/ecs/system/udp_service.dart';
 
@@ -37,8 +39,7 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
 
   late final MovementSystem movementSystem;
   late final CollisionSystem collisionSystem;
-  late final DebugRenderSystem renderSystem;
-  late final DebugFlameRenderSystem flameRenderSystem;
+  late final FlameSystem flameSystem;
 
   static const double tileSize = 22.0;
   late int gridCols;
@@ -51,6 +52,7 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
 
   Entity? localPlayer;
   Entity? localThoudsandRoad;
+  Entity? localCyclingInRoad;
 
   double? _targetX;
   double? _targetY;
@@ -64,6 +66,8 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
   final Map<String, List<Snapshot>> remoteSnapshots = {};
 
   late Sprite roadTile;
+
+  bool loadedAsset = false;
 
   @override
   Future<void> onLoad() async {
@@ -99,8 +103,16 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
     // Systems
     movementSystem = MovementSystem(worldWidth: worldW, worldHeight: worldH);
     collisionSystem = CollisionSystem();
-    renderSystem = DebugRenderSystem();
-    flameRenderSystem = DebugFlameRenderSystem(game: this);
+
+    // Spawn local player
+    await _spawnLocalThoudsandRoad();
+    await _spawnCyclingInRoad();
+    await _spawnLocalPlayer();
+    loadedAsset = true;
+
+
+    flameSystem = FlameSystem(game: this);
+    flameSystem.onLoad(ecsWorld);
 
     // UDP
     _udp = UdpService(
@@ -115,15 +127,10 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
       print('UDP connect error: $e');
     }
 
-    // Spawn local player
-    await _spawnLocalThoudsandRoad();
-    await _spawnLocalPlayer();
-
-    await flameRenderSystem.ensureLoaded(ecsWorld);
-
     _udp!.messages.listen((msg) {
       _handleIncoming(msg);
     });
+
   }
 
   Future<void> _spawnLocalPlayer() async {
@@ -135,7 +142,8 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
       ..add(Size2D(28.0, 28.0))
       ..add(CollisionBox())
       ..add(Direction(facingLeft: true))
-      ..add(AnimationData(AppGameAssets.catRun, 2, 3, 0.1));
+      ..add(AnimationData(
+          asset: AppGameAssets.catRun, rows: 2, cols: 3, stepTime: 0.1));
     localPlayer = me;
   }
 
@@ -145,11 +153,32 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
     final sprite = Sprite(image);
 
     final roadEntity = ecsWorld.create()
-      ..add(Position(0, 17 * tileSize))
+      ..add(Position(0, 16 * tileSize))
       ..add(CustomSprite(sprite))
-      ..add(Size2D(43 * tileSize, 2 * tileSize));
+      ..add(Size2D(43 * tileSize, 3 * tileSize));
 
     localThoudsandRoad = roadEntity;
+  }
+
+  Future<void> _spawnCyclingInRoad() async {
+
+    final data = await rootBundle.load(
+      'assets/game/rive/cycling-in-the-road.riv',
+    );
+
+    final file = RiveFile.import(data);
+
+    final artboard = file.mainArtboard;
+
+    artboard.addController(SimpleAnimation('GMKGSEP'));
+
+    final cyclingEntity = ecsWorld.create()
+      ..add(RiveData(artboard: artboard))
+      ..add(RiveAnimationData(x1: 0, y1: 4 * tileSize, x2: 16 * tileSize, y2: 4 * tileSize))
+      ..add(Position(0, 16 * tileSize))
+      ..add(Size2D(43 * tileSize, 3 * tileSize));
+
+    localCyclingInRoad = cyclingEntity;
   }
 
   void _handleIncoming(Map<String, dynamic> msg) {
@@ -172,7 +201,8 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
             ..add(Position(targetX, targetY))
             ..add(Size2D(28.0, 28.0))
             ..add(CollisionBox())
-            ..add(AnimationData(AppGameAssets.catRun, 2, 3, 0.1));
+            ..add(AnimationData(
+          asset: AppGameAssets.catRun, rows: 2, cols: 3, stepTime: 0.1));
           remotePlayers[id] = e;
           remoteSnapshots[id] = [
             Snapshot(timestamp: timestamp, x: targetX, y: targetY)
@@ -247,9 +277,9 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
       }
     }
 
-    _updateRemotePlayers(dt);
-
-    flameRenderSystem.sync(ecsWorld);
+    if(loadedAsset){
+      flameSystem.update(ecsWorld);
+    }
   }
 
   void _setVelocityTowardsTarget() {
@@ -278,7 +308,10 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    renderSystem.render(ecsWorld, canvas);
+    // if(loadedAsset)
+    // {
+    //   flameSystem.render(ecsWorld, canvas);
+    // }
 
     // Vẽ grid tile
     final gridPaint = Paint()
