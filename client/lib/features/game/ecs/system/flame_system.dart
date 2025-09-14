@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flame/components.dart' as comp;
 import 'package:flame/game.dart';
+import 'package:flame/rendering.dart';
 import 'package:flame/sprite.dart';
 import 'package:flame_rive/flame_rive.dart';
 import 'package:flutter/material.dart' as mtr;
@@ -58,13 +59,12 @@ class FlameSystem {
           ..position = Vector2(pos.x, pos.y);
         game.add(sprite);
       } else if (riveData != null && pos != null && size2d != null) {
-        
-
         final riveComponent = RiveComponent(artboard: riveData.artboard)
-          ..x = pos.x
-          ..y = pos.y
+          ..position = Vector2(pos.x, pos.y)
           ..width = size2d.w
           ..height = size2d.h;
+
+        riveComponent.anchor = comp.Anchor.center;
 
         cacheRC[e] = riveComponent;
         game.add(riveComponent);
@@ -106,7 +106,7 @@ class FlameSystem {
     }
   }
 
-  void update(World world) {
+  void update(World world, double dt) {
     for (final e in world.entities) {
       final pos = e.get<Position>();
       final anim = e.get<AnimationData>();
@@ -114,7 +114,19 @@ class FlameSystem {
       final riveAnimationData = e.get<RiveAnimationData>();
       final riveData = e.get<RiveData>();
 
-     
+      if (pos != null &&
+          size2d != null &&
+          anim != null &&
+          cacheSAC.containsKey(e)) {
+        cacheSAC[e]!.position.x = pos.x;
+        cacheSAC[e]!.position.y = pos.y;
+      } else if (pos != null &&
+          size2d != null &&
+          riveAnimationData != null &&
+          riveData != null &&
+          cacheRC.containsKey(e)) {
+        cacheRC[e]!.position.x += 100 * dt;
+      }
     }
   }
 }

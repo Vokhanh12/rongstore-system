@@ -70,6 +70,9 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
   bool loadedAsset = false;
 
   @override
+  Color backgroundColor() => const Color(0xFF87CEEB); // xanh trời
+
+  @override
   Future<void> onLoad() async {
     await super.onLoad();
 
@@ -162,21 +165,22 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
 
   Future<void> _spawnCyclingInRoad() async {
 
-    final data = await rootBundle.load(
+    final artboard = await loadArtboard(RiveFile.asset(
       'assets/game/rive/cycling-in-the-road.riv',
+    ));
+
+    final controller = StateMachineController.fromArtboard(
+      artboard,
+      "State Machine 1",
     );
 
-    final file = RiveFile.import(data);
-
-    final artboard = file.mainArtboard;
-
-    artboard.addController(SimpleAnimation('GMKGSEP'));
+    artboard.addController(controller!);
 
     final cyclingEntity = ecsWorld.create()
       ..add(RiveData(artboard: artboard))
       ..add(RiveAnimationData(x1: 0, y1: 4 * tileSize, x2: 16 * tileSize, y2: 4 * tileSize))
-      ..add(Position(0, 16 * tileSize))
-      ..add(Size2D(43 * tileSize, 3 * tileSize));
+      ..add(Position(0, 14 * tileSize))
+      ..add(Size2D(300, 300));
 
     localCyclingInRoad = cyclingEntity;
   }
@@ -278,7 +282,7 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
     }
 
     if(loadedAsset){
-      flameSystem.update(ecsWorld);
+      flameSystem.update(ecsWorld, dt);
     }
   }
 
@@ -305,7 +309,7 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
   }
 
   @override
-  void render(Canvas canvas) {
+  void render(Canvas canvas)  async{
     super.render(canvas);
 
     // if(loadedAsset)
@@ -325,6 +329,57 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
     for (int c = 0; c <= gridCols; c++) {
       final x = c * tileSize;
       canvas.drawLine(Offset(x, 0), Offset(x, worldH), gridPaint);
+    }
+
+final Paint paint = Paint()
+  ..color = Colors.red
+  ..style = PaintingStyle.stroke
+  ..strokeWidth = 1;
+
+const double w = 64/2;    
+const double h = 32/2;    
+const int rows = 6;
+const int cols = 12;
+
+final double x0 = 100;
+final double y0 = 100;
+
+for (int r = 0; r < rows; r++) {
+  for (int c = 0; c < cols; c++) {
+    final double x = x0 + c * w - r * (w / 2);
+    final double y = y0 + r * h;
+
+    final Path parallelogram = Path()
+      ..moveTo(x, y)                  // top-left
+      ..lineTo(x + w, y)              // top-right
+      ..lineTo(x + w - w / 2, y + h)  // bottom-right
+      ..lineTo(x - w / 2, y + h)      // bottom-left
+      ..close();
+
+    canvas.drawPath(parallelogram, paint);
+
+  }
+}
+
+
+
+
+
+    // Hiển thị dot localCyclingRoad
+    final posCIR = localCyclingInRoad?.get<Position>();
+    if (posCIR != null) {
+      final dotPaint = Paint()..color = Colors.yellow;
+      canvas.drawCircle(Offset(posCIR.x, posCIR.y), 5, dotPaint);
+
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: "(${posCIR.x.toStringAsFixed(1)}, ${posCIR.y.toStringAsFixed(1)})",
+          style: const TextStyle(color: Colors.yellow, fontSize: 14),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(posCIR.x, posCIR.y - 20));
     }
 
     // Hiển thị dot localPlayer
