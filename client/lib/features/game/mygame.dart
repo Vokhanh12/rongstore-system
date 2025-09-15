@@ -53,6 +53,7 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
   Entity? localPlayer;
   Entity? localThoudsandRoad;
   Entity? localCyclingInRoad;
+  Entity? localBlackSkyInRoad;
 
   double? _targetX;
   double? _targetY;
@@ -110,9 +111,9 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
     // Spawn local player
     await _spawnLocalThoudsandRoad();
     await _spawnCyclingInRoad();
+    await _spawnBlackSky();
     await _spawnLocalPlayer();
     loadedAsset = true;
-
 
     flameSystem = FlameSystem(game: this);
     flameSystem.onLoad(ecsWorld);
@@ -133,7 +134,6 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
     _udp!.messages.listen((msg) {
       _handleIncoming(msg);
     });
-
   }
 
   Future<void> _spawnLocalPlayer() async {
@@ -164,7 +164,6 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
   }
 
   Future<void> _spawnCyclingInRoad() async {
-
     final artboard = await loadArtboard(RiveFile.asset(
       'assets/game/rive/cycling-in-the-road.riv',
     ));
@@ -178,11 +177,28 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
 
     final cyclingEntity = ecsWorld.create()
       ..add(RiveData(artboard: artboard))
-      ..add(RiveAnimationData(x1: 0, y1: 4 * tileSize, x2: 16 * tileSize, y2: 4 * tileSize))
+      ..add(RiveAnimationData(
+          x1: 0, y1: 4 * tileSize, x2: 16 * tileSize, y2: 4 * tileSize))
       ..add(Position(0, 14 * tileSize))
       ..add(Size2D(300, 300));
 
     localCyclingInRoad = cyclingEntity;
+  }
+
+  Future<void> _spawnBlackSky() async {
+    final artboard = await loadArtboard(RiveFile.asset(
+      'assets/game/rive/black-sky-with-shooting-stars.riv',
+    ));
+
+    final controller = SimpleAnimation("Animation 1");
+    artboard.addController(controller);
+
+    final blackSkyEntity = ecsWorld.create()
+      ..add(RiveData(artboard: artboard))
+      ..add(Position(400, 200))
+      ..add(Size2D(9 * tileSize * 3.5, 42 * tileSize * 3.5));
+
+    localBlackSkyInRoad = blackSkyEntity;
   }
 
   void _handleIncoming(Map<String, dynamic> msg) {
@@ -206,7 +222,7 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
             ..add(Size2D(28.0, 28.0))
             ..add(CollisionBox())
             ..add(AnimationData(
-          asset: AppGameAssets.catRun, rows: 2, cols: 3, stepTime: 0.1));
+                asset: AppGameAssets.catRun, rows: 2, cols: 3, stepTime: 0.1));
           remotePlayers[id] = e;
           remoteSnapshots[id] = [
             Snapshot(timestamp: timestamp, x: targetX, y: targetY)
@@ -281,7 +297,7 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
       }
     }
 
-    if(loadedAsset){
+    if (loadedAsset) {
       flameSystem.update(ecsWorld, dt);
     }
   }
@@ -309,7 +325,7 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
   }
 
   @override
-  void render(Canvas canvas)  async{
+  void render(Canvas canvas) async {
     super.render(canvas);
 
     // if(loadedAsset)
@@ -331,41 +347,35 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
       canvas.drawLine(Offset(x, 0), Offset(x, worldH), gridPaint);
     }
 
-final Paint paint = Paint()
-  ..color = Colors.red
-  ..style = PaintingStyle.stroke
-  ..strokeWidth = 1;
+    final Paint paint = Paint()
+      ..color = Colors.red
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
 
-const double w = 64/2;    
-const double h = 32/2;    
-const int rows = 6;
-const int cols = 12;
+    const double w = 64 / 1.45;
+    const double h = 32 / 1.45;
+    const int rows = 3;
+    const int cols = 25;
 
-final double x0 = 100;
-final double y0 = 100;
+    final double x0 = 18;
+    final double y0 = 286;
 
-for (int r = 0; r < rows; r++) {
-  for (int c = 0; c < cols; c++) {
-    final double x = x0 + c * w - r * (w / 2);
-    final double y = y0 + r * h;
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        final double x = x0 + c * w - r * (w / 2);
+        final double y = y0 + r * h;
 
-    final Path parallelogram = Path()
-      ..moveTo(x, y)                  // top-left
-      ..lineTo(x + w, y)              // top-right
-      ..lineTo(x + w - w / 2, y + h)  // bottom-right
-      ..lineTo(x - w / 2, y + h)      // bottom-left
-      ..close();
+        final Path parallelogram = Path()
+          ..moveTo(x, y)
+          ..lineTo(x + w, y)
+          ..lineTo(x + w - w / 2, y + h)
+          ..lineTo(x - w / 2, y + h)
+          ..close();
 
-    canvas.drawPath(parallelogram, paint);
+        canvas.drawPath(parallelogram, paint);
+      }
+    }
 
-  }
-}
-
-
-
-
-
-    // Hiển thị dot localCyclingRoad
     final posCIR = localCyclingInRoad?.get<Position>();
     if (posCIR != null) {
       final dotPaint = Paint()..color = Colors.yellow;
@@ -373,7 +383,8 @@ for (int r = 0; r < rows; r++) {
 
       final textPainter = TextPainter(
         text: TextSpan(
-          text: "(${posCIR.x.toStringAsFixed(1)}, ${posCIR.y.toStringAsFixed(1)})",
+          text:
+              "(${posCIR.x.toStringAsFixed(1)}, ${posCIR.y.toStringAsFixed(1)})",
           style: const TextStyle(color: Colors.yellow, fontSize: 14),
         ),
         textDirection: TextDirection.ltr,
@@ -423,6 +434,35 @@ for (int r = 0; r < rows; r++) {
     if (_targetX != null && _targetY != null) {
       final targetPaint = Paint()..color = Colors.blue;
       canvas.drawCircle(Offset(_targetX!, _targetY!), 6, targetPaint);
+    }
+
+    // Vẽ grid xanh bằng tileSize
+    final double startX = 0;
+    final double startY = 5 * tileSize;
+    final double gridWidth = tileSize * gridCols;
+    final double gridHeight = 8 * tileSize;
+
+    final Paint gridPaintBlue = Paint()
+      ..color = Colors.blue
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+// Vẽ các đường ngang
+    for (double y = startY; y <= startY + gridHeight; y += tileSize) {
+      canvas.drawLine(
+        Offset(startX, y),
+        Offset(startX + gridWidth, y),
+        gridPaintBlue,
+      );
+    }
+
+// Vẽ các đường dọc
+    for (double x = startX; x <= startX + gridWidth; x += tileSize) {
+      canvas.drawLine(
+        Offset(x, startY),
+        Offset(x, startY + gridHeight),
+        gridPaintBlue,
+      );
     }
   }
 
