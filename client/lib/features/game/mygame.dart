@@ -16,7 +16,6 @@ import 'package:uuid/uuid.dart';
 
 import 'package:rongchoi_application/core/constants/game_assets.dart';
 import 'package:rongchoi_application/features/game/ecs/system/collision_system.dart';
-import 'package:rongchoi_application/features/game/ecs/system/debug_flame_render_system.dart';
 import 'package:rongchoi_application/features/game/ecs/system/flame_system.dart';
 import 'package:rongchoi_application/features/game/ecs/system/movement_system.dart';
 import 'package:rongchoi_application/features/game/ecs/system/udp_service.dart';
@@ -110,6 +109,8 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
 
     // Spawn local player
     await _spawnLocalThoudsandRoad();
+    await _spawnLocalSideWalk();
+    await _spawnLocalSideHouse();
     await _spawnCyclingInRoad();
     await _spawnBlackSky();
     await _spawnLocalPlayer();
@@ -145,6 +146,7 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
       ..add(Size2D(28.0, 28.0))
       ..add(CollisionBox())
       ..add(Direction(facingLeft: true))
+      ..add(comp.Transform(anchor: Anchor.center))
       ..add(AnimationData(
           asset: AppGameAssets.catRun, rows: 2, cols: 3, stepTime: 0.1));
     localPlayer = me;
@@ -157,6 +159,32 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
 
     final roadEntity = ecsWorld.create()
       ..add(Position(0, 16 * tileSize))
+      ..add(CustomSprite(sprite))
+      ..add(Size2D(43 * tileSize, 3 * tileSize));
+
+    localThoudsandRoad = roadEntity;
+  }
+
+  Future<void> _spawnLocalSideWalk() async {
+    this.images.prefix = "assets/";
+    final image = await this.images.load('game/png/side-walk.png');
+    final sprite = Sprite(image);
+
+    final roadEntity = ecsWorld.create()
+      ..add(Position(0, 13 * tileSize))
+      ..add(CustomSprite(sprite))
+      ..add(Size2D(43 * tileSize, 3 * tileSize));
+
+    localThoudsandRoad = roadEntity;
+  }
+
+  Future<void> _spawnLocalSideHouse() async {
+    this.images.prefix = "assets/";
+    final image = await this.images.load('game/png/side-walk.png');
+    final sprite = Sprite(image);
+
+    final roadEntity = ecsWorld.create()
+      ..add(Position(0, 10 * tileSize))
       ..add(CustomSprite(sprite))
       ..add(Size2D(43 * tileSize, 3 * tileSize));
 
@@ -195,8 +223,9 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
 
     final blackSkyEntity = ecsWorld.create()
       ..add(RiveData(artboard: artboard))
-      ..add(Position(400, 200))
-      ..add(Size2D(9 * tileSize * 3.5, 42 * tileSize * 3.5));
+      ..add(Position(0, 0))
+      ..add(comp.Transform(anchor: Anchor.topLeft))
+      ..add(Size2D(1113.7 - (1113.7 * 34 / 100), 259 - (259 * 34 / 100)));
 
     localBlackSkyInRoad = blackSkyEntity;
   }
@@ -376,6 +405,35 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
       }
     }
 
+    final Paint paintg = Paint()
+      ..color = const Color.fromARGB(255, 238, 0, 255)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    const double wg = 64 / 1.45;
+    const double hg = 32 / 1.45;
+    const int rowsg = 3;
+    const int colsg = 25;
+
+    final double x0g = 40;
+    final double y0g = 220;
+
+    for (int r = 0; r < rowsg; r++) {
+      for (int c = 0; c < colsg; c++) {
+        final double x = x0g + c * wg - r * (wg / 2);
+        final double y = y0g + r * hg;
+
+        final Path parallelogram = Path()
+          ..moveTo(x, y)
+          ..lineTo(x + wg, y)
+          ..lineTo(x + wg - wg / 2, y + hg)
+          ..lineTo(x - wg / 2, y + hg)
+          ..close();
+
+        canvas.drawPath(parallelogram, paintg);
+      }
+    }
+
     final posCIR = localCyclingInRoad?.get<Position>();
     if (posCIR != null) {
       final dotPaint = Paint()..color = Colors.yellow;
@@ -408,6 +466,23 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
       );
       textPainter.layout();
       textPainter.paint(canvas, Offset(pos.x, pos.y - 20));
+    }
+
+    // Hiển thị dot localPlayer
+    final pos1 = localBlackSkyInRoad?.get<Position>();
+    if (pos1 != null) {
+      final dotPaint = Paint()..color = Colors.red;
+      canvas.drawCircle(Offset(pos1.x, pos1.y), 5, dotPaint);
+
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: "(${pos1.x.toStringAsFixed(1)}, ${pos1.y.toStringAsFixed(1)})",
+          style: const TextStyle(color: Colors.red, fontSize: 14),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(pos1.x, pos1.y - 20));
     }
 
     // Hiển thị remotePlayers

@@ -25,8 +25,9 @@ class FlameSystem {
       final size2d = e.get<Size2D>();
       final riveAnimationData = e.get<RiveAnimationData>();
       final riveData = e.get<RiveData>();
+      final transform = e.get<Transform>();
 
-      if (animData != null && pos != null) {
+      if (animData != null && pos != null && transform != null) {
         final image = await game.images.load(animData.asset);
 
         final spriteSheet = SpriteSheet(
@@ -49,7 +50,7 @@ class FlameSystem {
           size: Vector2(128, 128),
         );
 
-        flameComp.anchor = comp.Anchor.center;
+        flameComp.anchor = transform.anchor;
         cacheSAC[e] = flameComp;
         game.add(flameComp);
       } else if (cus != null && pos != null && size2d != null) {
@@ -58,13 +59,13 @@ class FlameSystem {
           ..size = Vector2(size2d.w, size2d.h)
           ..position = Vector2(pos.x, pos.y);
         game.add(sprite);
-      } else if (riveData != null && pos != null && size2d != null) {
+      } else if (riveData != null && pos != null && size2d != null && transform != null) {
         final riveComponent = RiveComponent(artboard: riveData.artboard)
           ..position = Vector2(pos.x, pos.y)
           ..width = size2d.w
           ..height = size2d.h;
 
-        riveComponent.anchor = comp.Anchor.center;
+        riveComponent.anchor = transform.anchor;
 
         cacheRC[e] = riveComponent;
         game.add(riveComponent);

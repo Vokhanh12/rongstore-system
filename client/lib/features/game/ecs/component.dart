@@ -1,10 +1,14 @@
 import 'dart:ui';
 
-import 'package:dartz/dartz.dart';
 import 'package:flame/components.dart';
 import 'package:flame_rive/flame_rive.dart';
 
 abstract class Component {}
+
+class Transform extends Component{
+  Anchor anchor;
+  Transform({required this.anchor});
+}
 
 class Position extends Component {
   double x, y;
