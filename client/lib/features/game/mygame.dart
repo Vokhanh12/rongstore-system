@@ -83,8 +83,8 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
     );
 
     // Ví dụ bạn muốn map 30x17 tile (giống chuẩn 1920x1080)
-    gridCols = 43; // padding -1
-    gridRows = 19; // padding -1
+    gridCols = 19; // padding -1
+    gridRows = 33; // padding -1
 
     worldW = gridCols * tileSize;
     worldH = gridRows * tileSize;
@@ -114,6 +114,8 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
     await _spawnCyclingInRoad();
     await _spawnBlackSky();
     await _spawnLocalPlayer();
+    await _spawnLocalHouse();
+
     loadedAsset = true;
 
     flameSystem = FlameSystem(game: this);
@@ -158,7 +160,7 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
     final sprite = Sprite(image);
 
     final roadEntity = ecsWorld.create()
-      ..add(Position(0, 16 * tileSize))
+      ..add(Position(0, 26 * tileSize))
       ..add(CustomSprite(sprite))
       ..add(Size2D(43 * tileSize, 3 * tileSize));
 
@@ -171,9 +173,22 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
     final sprite = Sprite(image);
 
     final roadEntity = ecsWorld.create()
-      ..add(Position(0, 13 * tileSize))
+      ..add(Position(0, 23 * tileSize))
       ..add(CustomSprite(sprite))
       ..add(Size2D(43 * tileSize, 3 * tileSize));
+
+    localThoudsandRoad = roadEntity;
+  }
+
+   Future<void> _spawnLocalHouse() async {
+    this.images.prefix = "assets/";
+    final image = await this.images.load('game/png/house.png');
+    final sprite = Sprite(image);
+
+    final roadEntity = ecsWorld.create()
+      ..add(Position(2 * tileSize, 5 * tileSize))
+      ..add(CustomSprite(sprite))
+      ..add(Size2D(13 * tileSize, 18 * tileSize));
 
     localThoudsandRoad = roadEntity;
   }
@@ -184,7 +199,7 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
     final sprite = Sprite(image);
 
     final roadEntity = ecsWorld.create()
-      ..add(Position(0, 10 * tileSize))
+      ..add(Position(0, 20 * tileSize))
       ..add(CustomSprite(sprite))
       ..add(Size2D(43 * tileSize, 3 * tileSize));
 
@@ -387,7 +402,7 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
     const int cols = 25;
 
     final double x0 = 18;
-    final double y0 = 286;
+    final double y0 = 23 * tileSize;
 
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
@@ -413,10 +428,10 @@ class MyGame extends FlameGame with TapDetector, HasKeyboardHandlerComponents {
     const double wg = 64 / 1.45;
     const double hg = 32 / 1.45;
     const int rowsg = 3;
-    const int colsg = 25;
+    const int colsg = 10;
 
     final double x0g = 40;
-    final double y0g = 220;
+    final double y0g = 20 * tileSize;
 
     for (int r = 0; r < rowsg; r++) {
       for (int c = 0; c < colsg; c++) {
