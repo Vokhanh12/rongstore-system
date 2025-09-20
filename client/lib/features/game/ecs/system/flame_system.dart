@@ -1,12 +1,13 @@
 import 'dart:ui';
 import 'package:flame/components.dart' as comp;
 import 'package:flame/game.dart';
-import 'package:flame/rendering.dart';
 import 'package:flame/sprite.dart';
 import 'package:flame_rive/flame_rive.dart';
 import 'package:flutter/material.dart' as mtr;
 import 'package:rongchoi_application/features/game/ecs/component.dart';
 import 'package:rongchoi_application/features/game/ecs/entity.dart';
+
+import '../../world/world.dart';
 
 class FlameSystem {
   final FlameGame game;

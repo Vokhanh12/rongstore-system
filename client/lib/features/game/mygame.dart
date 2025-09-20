@@ -23,7 +23,7 @@ import 'package:rongchoi_application/features/game/ecs/system/udp_service.dart';
 import 'ecs/component.dart';
 import 'ecs/component.dart' as comp;
 import 'ecs/entity.dart';
-import 'ecs/entity.dart' as ecs;
+import 'world/world.dart' as ecs;
 
 class Snapshot {
   final double timestamp;

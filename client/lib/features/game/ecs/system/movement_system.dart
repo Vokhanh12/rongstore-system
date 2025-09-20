@@ -1,5 +1,5 @@
+import '../../world/world.dart';
 import '../component.dart';
-import '../entity.dart';
 
 class MovementSystem {
   final double worldWidth;

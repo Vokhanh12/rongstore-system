@@ -4,6 +4,8 @@ import 'package:flame/sprite.dart';
 import 'package:rongchoi_application/features/game/ecs/component.dart';
 import 'package:rongchoi_application/features/game/ecs/entity.dart';
 
+import '../../world/world.dart';
+
 class DebugFlameRenderSystem {
   final FlameGame game;
   final Map<Entity, comp.SpriteAnimationComponent> cache = {};
