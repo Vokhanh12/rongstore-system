@@ -1,19 +1,18 @@
-import 'package:rongchoi_application/features/game/map/spawn.dart';
+import 'package:rongchoi_application/features/game/tools/sprite_builder.dart';
 
 abstract class IMap {
-  final Spawn spawn;
+  late ISpriteBuilder spriteBuilder;
 
-  IMap({required this.spawn});
+  IMap({required this.spriteBuilder});
 
-  Future<void> init();
+  Future<void> renderLayout();
 }
 
 class MapHome extends IMap {
-  MapHome({required super.spawn});
+  MapHome({required super.spriteBuilder});
 
   @override
-  Future<void> init() {
-    // TODO: implement init
+  Future<void> renderLayout() {
     throw UnimplementedError();
   }
 }

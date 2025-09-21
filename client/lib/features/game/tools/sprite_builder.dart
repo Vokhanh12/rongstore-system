@@ -3,12 +3,12 @@ import 'package:rongchoi_application/core/constants/game_assets.dart';
 import 'package:rongchoi_application/features/game/ecs/component.dart';
 import 'package:rongchoi_application/features/game/ecs/entity.dart';
 import 'package:rongchoi_application/features/game/tools/grid_2d.dart';
-import '../world/world.dart'as ecs;
+import 'package:rongchoi_application/features/game/world/entiy_builder.dart';
 
-abstract class ISpawn {
-  final ecs.World world; 
+abstract class ISpriteBuilder {
+  final EntiyBuilder entiyBuilder;
 
-  ISpawn({required this.world});
+  ISpriteBuilder({required this.entiyBuilder});
 
   Future<Entity> thousandRoad();
   Future<Entity> sideWalk();
@@ -19,18 +19,16 @@ abstract class ISpawn {
   Future<Entity> house();
 }
 
-class Spawn extends ISpawn {
-  Spawn({required super.world});
+class SpriteBuilder extends ISpriteBuilder {
+  SpriteBuilder({required super.entiyBuilder});
 
   @override
   Future<Entity> blackSky() {
-    // TODO: implement blackSky
     throw UnimplementedError();
   }
 
   @override
   Future<Entity> cyclingInRoad() {
-    // TODO: implement cyclingInRoad
     throw UnimplementedError();
   }
 
@@ -42,7 +40,7 @@ class Spawn extends ISpawn {
 
     double cellSize = gridConfig.size;
 
-    return world.create()
+    return entiyBuilder.create()
       ..add(Position(2 * cellSize, 5 * cellSize))
       ..add(CustomSprite(sprite))
       ..add(Size2D(13 * cellSize, 18 * cellSize));
@@ -50,7 +48,7 @@ class Spawn extends ISpawn {
 
   @override
   Future<Entity> player() async{
-     return world.create()
+     return entiyBuilder.create()
       ..add(PlayerTag())
       ..add(Position(300.0, 20.0))
       ..add(Velocity())
