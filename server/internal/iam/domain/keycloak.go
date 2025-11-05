@@ -2,7 +2,6 @@ package domain
 
 import "context"
 
-// Token model
 type Token struct {
 	IdToken          string `json:"token_id"`
 	AccessToken      string `json:"access_token"`
@@ -15,7 +14,6 @@ type Token struct {
 	Scope            string `json:"scope"`
 }
 
-// Keycloak interface (domain-level)
 type Keycloak interface {
 	GetToken(ctx context.Context, username, password string) (*Token, error)
 	RefreshToken(ctx context.Context, refreshToken string) (*Token, error)

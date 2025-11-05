@@ -1,5 +1,3 @@
-package main
-
 // import (
 // 	"log"
 // 	"net"
@@ -76,6 +74,8 @@ package main
 // 	}
 // }
 
+package main
+
 import (
 	"encoding/json"
 	"fmt"
@@ -107,7 +107,7 @@ var (
 	players   = make(map[string]*Player)
 	playersMu sync.Mutex
 
-	clients   = make(map[string]*net.UDPAddr) // key = playerID
+	clients   = make(map[string]*net.UDPAddr)
 	clientsMu sync.Mutex
 )
 
@@ -117,13 +117,13 @@ func handleUDP(conn *net.UDPConn) {
 	for {
 		n, addr, err := conn.ReadFromUDP(buf)
 		if err != nil {
-			//	log.Println(time.Now().Format(time.RFC3339), "read error:", err)
+			log.Println(time.Now().Format(time.RFC3339), "read error:", err)
 			continue
 		}
 
 		var msg Message
 		if err := json.Unmarshal(buf[:n], &msg); err != nil {
-			//	log.Println(time.Now().Format(time.RFC3339), "json unmarshal error from", addr, ":", err)
+			log.Println(time.Now().Format(time.RFC3339), "json unmarshal error from", addr, ":", err)
 			continue
 		}
 
@@ -193,6 +193,9 @@ func main() {
 
 	addr := net.UDPAddr{
 		Port: 8080,
+
+
+		
 		IP:   net.ParseIP("0.0.0.0"),
 	}
 	conn, err := net.ListenUDP("udp", &addr)
@@ -212,3 +215,137 @@ func main() {
 	// keep server alive
 	select {}
 }
+
+// package main
+
+// import (
+// 	"bytes"
+// 	"encoding/json"
+// 	"fmt"
+// 	"io/ioutil"
+// 	"net/http"
+// 	"os"
+// )
+
+// type OverpassResponse struct {
+// 	Elements []Element `json:"elements"`
+// }
+
+// type Element struct {
+// 	Type  string            `json:"type"`
+// 	ID    int64             `json:"id"`
+// 	Lat   float64           `json:"lat,omitempty"`
+// 	Lon   float64           `json:"lon,omitempty"`
+// 	Nodes []int64           `json:"nodes,omitempty"`
+// 	Tags  map[string]string `json:"tags,omitempty"`
+// }
+
+// // GeoJSON cấu trúc
+// type GeoJSON struct {
+// 	Type     string    `json:"type"`
+// 	Features []Feature `json:"features"`
+// }
+
+// type Feature struct {
+// 	Type       string     `json:"type"`
+// 	Geometry   Geometry   `json:"geometry"`
+// 	Properties Properties `json:"properties"`
+// }
+
+// type Geometry struct {
+// 	Type        string      `json:"type"`
+// 	Coordinates [][]float64 `json:"coordinates"`
+// }
+
+// type Properties map[string]string
+
+// func main() {
+// 	// Overpass query
+// 	query := `
+// [out:json][timeout:25];
+// (
+//   way["highway"](21.066,105.815,21.074,105.823);
+//   way["landuse"](21.066,105.815,21.074,105.823);
+// );
+// out body;
+// >;
+// out skel qt;
+// 	`
+
+// 	// Gửi request POST
+// 	resp, err := http.Post(
+// 		"https://overpass-api.de/api/interpreter",
+// 		"text/plain",
+// 		bytes.NewBuffer([]byte(query)),
+// 	)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	defer resp.Body.Close()
+
+// 	// Đọc dữ liệu JSON trả về
+// 	body, err := ioutil.ReadAll(resp.Body)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+
+// 	var osmResp OverpassResponse
+// 	if err := json.Unmarshal(body, &osmResp); err != nil {
+// 		panic(err)
+// 	}
+
+// 	// Map node id -> tọa độ
+// 	nodes := make(map[int64][2]float64)
+// 	for _, el := range osmResp.Elements {
+// 		if el.Type == "node" {
+// 			nodes[el.ID] = [2]float64{el.Lon, el.Lat} // GeoJSON: [lon, lat]
+// 		}
+// 	}
+
+// 	// Chuyển Way thành Feature
+// 	var features []Feature
+// 	for _, el := range osmResp.Elements {
+// 		if el.Type == "way" && len(el.Nodes) > 0 {
+// 			var coords [][]float64
+// 			for _, nid := range el.Nodes {
+// 				if coord, ok := nodes[nid]; ok {
+// 					coords = append(coords, []float64{coord[0], coord[1]})
+// 				}
+// 			}
+
+// 			geomType := "LineString"
+// 			// Nếu là landuse (polygon) thì đóng kín
+// 			if el.Tags["landuse"] != "" && len(coords) > 2 {
+// 				geomType = "Polygon"
+// 				if coords[0][0] != coords[len(coords)-1][0] ||
+// 					coords[0][1] != coords[len(coords)-1][1] {
+// 					coords = append(coords, coords[0]) // đóng kín polygon
+// 				}
+// 			}
+
+// 			geometry := Geometry{
+// 				Type:        geomType,
+// 				Coordinates: coords,
+// 			}
+// 			feature := Feature{
+// 				Type:       "Feature",
+// 				Geometry:   geometry,
+// 				Properties: el.Tags,
+// 			}
+// 			features = append(features, feature)
+// 		}
+// 	}
+
+// 	geojson := GeoJSON{
+// 		Type:     "FeatureCollection",
+// 		Features: features,
+// 	}
+
+// 	out, _ := json.MarshalIndent(geojson, "", "  ")
+// 	err = os.WriteFile("map.geojson", out, 0644)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+
+// 	fmt.Println("✅ Kết quả đã được lưu vào map.geojson")
+// }

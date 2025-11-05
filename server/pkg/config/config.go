@@ -15,21 +15,22 @@ import (
 )
 
 type Config struct {
-	// DB config
+
+	// DB
 	PostgresHost     string
 	PostgresPort     int
 	PostgresUser     string
 	PostgresPassword string
 	PostgresDB       string
 
-	// Redis config
+	// Redis
 	RedisHost     string
 	RedisPort     int
 	RedisPassword string
 	RedisDB       int
-	RedisTTL      int // TTL mặc định (giây) cho session
+	RedisTTL      int
 
-	// Keycloak config
+	// Keycloak
 	KeycloakURL          string
 	KeycloakServerHealth string
 	KeycloakRealm        string
@@ -37,6 +38,14 @@ type Config struct {
 	KeycloakSecret       string
 	KeycloakRedirect     string
 	KeycloakScope        string
+
+	// Title-gl
+	TitleGlHost string
+	TitleGlPort int
+
+	// ORSM
+	ORSMHost string
+	ORSMPort string
 }
 
 func Load() *Config {
