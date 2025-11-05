@@ -4,6 +4,8 @@ import 'package:flame/sprite.dart';
 import 'package:rongchoi_application/features/game/ecs/component.dart';
 import 'package:rongchoi_application/features/game/ecs/entity.dart';
 
+import '../../world/world.dart';
+
 class DebugFlameRenderSystem {
   final FlameGame game;
   final Map<Entity, comp.SpriteAnimationComponent> cache = {};
@@ -27,7 +29,6 @@ class DebugFlameRenderSystem {
           ),
         );
 
-        // ví dụ: lấy animation ở row 0
         final anim = spriteSheet.createAnimation(
           row: 0,
           stepTime: animData.stepTime,
@@ -50,11 +51,13 @@ class DebugFlameRenderSystem {
 
   void sync(World world) {
     for (final e in world.entities) {
-      // Nếu entity mới có animation nhưng chưa cache thì tạo sprite
+
       if (!cache.containsKey(e)) {
         final animData = e.get<AnimationData>();
         final pos = e.get<Position>();
         final size = e.get<Size2D>();
+        final cusSprite = e.get<CustomSprite>();
+
 
         if (animData != null && pos != null) {
           final image = game.images.fromCache(animData.asset);
@@ -81,7 +84,7 @@ class DebugFlameRenderSystem {
 
           cache[e] = flameComp;
           game.add(flameComp);
-        }
+        } 
       }
 
       final pos = e.get<Position>();

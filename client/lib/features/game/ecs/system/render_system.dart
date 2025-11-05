@@ -1,7 +1,7 @@
 import 'dart:ui';
 
+import '../../world/world.dart';
 import '../component.dart';
-import '../entity.dart';
 
 class RenderSystem {
 

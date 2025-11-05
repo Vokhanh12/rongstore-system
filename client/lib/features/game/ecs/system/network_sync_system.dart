@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:rongchoi_application/features/game/ecs/system/socket_service.dart';
 
+import '../../world/world.dart';
 import '../component.dart';
 import '../entity.dart';
 

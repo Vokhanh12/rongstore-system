@@ -1,5 +1,6 @@
+import 'package:rongchoi_application/features/game/world/world.dart';
+
 import '../component.dart';
-import '../entity.dart';
 
 class CollisionSystem {
   void update(World world) {
