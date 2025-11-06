@@ -3,7 +3,8 @@ package usecases
 import (
 	"context"
 	iamv1 "server/api/iam/v1"
-	"server/internal/iam/domain"
+	rp "server/internal/iam/domain/repositories"
+	sv "server/internal/iam/domain/services"
 )
 
 // --- Command & Result (trước đây ở package commands) ---
@@ -33,19 +34,19 @@ func MapLoginResultToResponseDTO(result *LoginResult) iamv1.LoginResponse {
 }
 
 // --- Usecase (trước đây ở package usecases) ---
-type LoginUserUsecase struct {
-	UserRepo domain.UserRepository
-	Keycloak domain.Keycloak
+type LoginUsecase struct {
+	UserRepo rp.UserRepository
+	Keycloak sv.Keycloak
 }
 
-func NewLoginUserUsecase(repo domain.UserRepository, kcl domain.Keycloak) *LoginUserUsecase {
-	return &LoginUserUsecase{
+func NewLoginUsecase(repo rp.UserRepository, kcl sv.Keycloak) *LoginUsecase {
+	return &LoginUsecase{
 		UserRepo: repo,
 		Keycloak: kcl,
 	}
 }
 
-func (u *LoginUserUsecase) Execute(ctx context.Context, cmd LoginCommand) (*LoginResult, error) {
+func (u *LoginUsecase) Execute(ctx context.Context, cmd LoginCommand) (*LoginResult, error) {
 	token, err := u.Keycloak.GetToken(ctx, cmd.Email, cmd.Password)
 	if err != nil {
 		return nil, err

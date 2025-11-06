@@ -2,7 +2,8 @@ package queries
 
 import (
 	"context"
-	"server/internal/iam/domain"
+	en "server/internal/iam/domain/entities"
+	rp "server/internal/iam/domain/repositories"
 )
 
 type GetUserByEmailQuery struct {
@@ -10,13 +11,13 @@ type GetUserByEmailQuery struct {
 }
 
 type GetUserByEmailHandler struct {
-	repo domain.UserRepository
+	repo rp.UserRepository
 }
 
-func NewGetUserByEmailHandler(r domain.UserRepository) *GetUserByEmailHandler {
+func NewGetUserByEmailHandler(r rp.UserRepository) *GetUserByEmailHandler {
 	return &GetUserByEmailHandler{repo: r}
 }
 
-func (h *GetUserByEmailHandler) Handle(ctx context.Context, q GetUserByEmailQuery) (*domain.User, error) {
+func (h *GetUserByEmailHandler) Handle(ctx context.Context, q GetUserByEmailQuery) (*en.User, error) {
 	return h.repo.FindByEmail(ctx, q.Email)
 }

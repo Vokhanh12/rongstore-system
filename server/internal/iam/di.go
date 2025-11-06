@@ -1,12 +1,12 @@
 package wire
 
 import (
-	"server/internal/iam/domain"
+	"server/internal/iam/domain/services"
 	iagrpc "server/internal/iam/interface/grpc"
 )
 
 type IamDeps struct {
 	Handler  *iagrpc.IamHandler
-	Store    domain.SessionStore
-	Keycloak domain.Keycloak
+	Store    services.SessionStore
+	Keycloak services.Keycloak
 }

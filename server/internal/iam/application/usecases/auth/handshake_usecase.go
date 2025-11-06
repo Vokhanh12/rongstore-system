@@ -13,35 +13,58 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/hkdf"
 
-	"server/internal/iam/application/commands"
+	iamv1 "server/api/iam/v1"
 	"server/internal/iam/domain"
+	rp "server/internal/iam/domain/repositories"
+	sv "server/internal/iam/domain/services"
 	"server/pkg/crypto"
 	"server/pkg/errors"
 )
 
-// zeroBytes overwrites sensitive data in memory (best-effort in Go).
-func zeroBytes(b []byte) {
-	if b == nil {
-		return
-	}
-	for i := range b {
-		b[i] = 0
+// --- Command & Result ---
+type HandshakeCommand struct {
+	ClientPublicKey string
+}
+
+type HandshakeResult struct {
+	ServerPublicKey      string `json:"server_public_key"`
+	SessionID            string `json:"session_id"`
+	HKDFSaltB64          string `json:"hkdf_salt_b64"`
+	ExpiresAt            int64  `json:"expires_at,omitempty"`
+	EncryptedSessionData string `json:"encrypted_session_data,omitempty"`
+}
+
+// --- Mapper ---
+func MapHandshakeRequestToCommand(req *iamv1.HandshakeRequest) HandshakeCommand {
+	return HandshakeCommand{
+		ClientPublicKey: req.ClientPublicKey,
 	}
 }
 
+func MapHandshakeResultToResponseDTO(result *HandshakeResult) iamv1.HandshakeResponse {
+	return iamv1.HandshakeResponse{
+		ServerPublicKey:      result.ServerPublicKey,
+		SessionId:            result.SessionID,
+		HkdfSaltB64:          result.HKDFSaltB64,
+		ExpiresAt:            int32(result.ExpiresAt),
+		EncryptedSessionData: result.EncryptedSessionData,
+	}
+}
+
+// --- Usecase ---
 type HandshakeUsecase struct {
-	UserRepo     domain.UserRepository
-	SessionStore domain.SessionStore
+	UserRepo     rp.UserRepository
+	SessionStore sv.SessionStore
 }
 
-func NewHandshakeUsecase(repo domain.UserRepository, store domain.SessionStore) *HandshakeUsecase {
+func NewHandshakeUsecase(repo rp.UserRepository, store sv.SessionStore) *HandshakeUsecase {
 	return &HandshakeUsecase{
 		UserRepo:     repo,
 		SessionStore: store,
 	}
 }
 
-func (u *HandshakeUsecase) Execute(ctx context.Context, cmd commands.HandshakeCommand) (*commands.HandshakeResult, error) {
+func (u *HandshakeUsecase) Execute(ctx context.Context, cmd HandshakeCommand) (*HandshakeResult, error) {
 	// 0) basic validation
 	if cmd.ClientPublicKey == "" {
 		return nil, errors.NewBusinessError(
@@ -50,7 +73,7 @@ func (u *HandshakeUsecase) Execute(ctx context.Context, cmd commands.HandshakeCo
 		)
 	}
 
-	// 1) Curve: X25519 (nhanh + phổ biến)
+	// 1) Curve: X25519
 	curve := ecdh.X25519()
 
 	// 2) Server ephemeral keypair
@@ -85,7 +108,7 @@ func (u *HandshakeUsecase) Execute(ctx context.Context, cmd commands.HandshakeCo
 			errors.WithMessage("key agreement failed"),
 		)
 	}
-	defer zeroBytes(sharedSecret)
+	defer crypto.ZeroBytes(sharedSecret)
 
 	// 5) HKDF salt
 	hkdfSalt := make([]byte, 32)
@@ -115,7 +138,7 @@ func (u *HandshakeUsecase) Execute(ctx context.Context, cmd commands.HandshakeCo
 	okm := make([]byte, 88)
 	hk := hkdf.New(sha256.New, sharedSecret, hkdfSalt, info)
 	if _, err := io.ReadFull(hk, okm); err != nil {
-		zeroBytes(okm)
+		crypto.ZeroBytes(okm)
 		return nil, errors.NewBusinessError(
 			domain.HANDSHAKE_KEY_DERIVE_FAIL,
 			errors.WithMessage("hkdf derive failed"),
@@ -127,7 +150,7 @@ func (u *HandshakeUsecase) Execute(ctx context.Context, cmd commands.HandshakeCo
 	ks2c := okm[32:64]
 
 	// 9) Store session
-	entry := &domain.SessionEntry{
+	entry := &sv.SessionEntry{
 		SessionID: sessionID,
 		ClientPub: clientPubBytes,
 		ServerPub: serverPubBytes,
@@ -137,9 +160,9 @@ func (u *HandshakeUsecase) Execute(ctx context.Context, cmd commands.HandshakeCo
 		Expiry:    expiry,
 	}
 	if err := u.SessionStore.StoreSession(ctx, entry); err != nil {
-		zeroBytes(okm)
-		zeroBytes(kc2s)
-		zeroBytes(ks2c)
+		crypto.ZeroBytes(okm)
+		crypto.ZeroBytes(kc2s)
+		crypto.ZeroBytes(ks2c)
 		return nil, errors.NewBusinessError(
 			domain.HANDSHAKE_STORAGE_FAIL,
 			errors.WithMessage("failed to store session"),
@@ -147,9 +170,9 @@ func (u *HandshakeUsecase) Execute(ctx context.Context, cmd commands.HandshakeCo
 		)
 	}
 
-	zeroBytes(okm)
+	crypto.ZeroBytes(okm)
 
-	return &commands.HandshakeResult{
+	return &HandshakeResult{
 		ServerPublicKey: serverPubB64,
 		SessionID:       sessionID,
 		HKDFSaltB64:     base64.StdEncoding.EncodeToString(hkdfSalt),

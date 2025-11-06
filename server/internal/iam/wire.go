@@ -26,7 +26,7 @@ func InitializeIamHandler() (IamDeps, error) {
 		usecases.NewLoginUserUsecase,
 		usecases.NewHandshakeUsecase,
 		grpc.NewIamHandler,
-		wire.Struct(new(IamDeps), "Handler", "Store", "Keycloak"), // thêm field Keycloak
+		wire.Struct(new(IamDeps), "Handler", "Store", "Keycloak"),
 	)
 	return IamDeps{}, nil
 }

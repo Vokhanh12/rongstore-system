@@ -10,11 +10,11 @@ import (
 	"net/url"
 	"time"
 
-	"server/internal/iam/domain"
+	sv "server/internal/iam/domain/services"
 	"server/pkg/config"
 )
 
-var _ domain.Keycloak = (*KeycloakClient)(nil)
+var _ sv.Keycloak = (*KeycloakClient)(nil)
 
 type KeycloakClient struct {
 	BaseURL string
@@ -33,7 +33,7 @@ func asStdContext(ctx context.Context) context.Context {
 	return context.Background()
 }
 
-func (kc *KeycloakClient) GetToken(ctx context.Context, username, password string) (*domain.Token, error) {
+func (kc *KeycloakClient) GetToken(ctx context.Context, username, password string) (*sv.Token, error) {
 	stdCtx := asStdContext(ctx)
 
 	form := url.Values{}
@@ -63,7 +63,7 @@ func (kc *KeycloakClient) GetToken(ctx context.Context, username, password strin
 		return nil, fmt.Errorf("failed to get token: status %d, body %s", resp.StatusCode, string(body))
 	}
 
-	var token domain.Token
+	var token sv.Token
 	if err := json.NewDecoder(resp.Body).Decode(&token); err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (kc *KeycloakClient) GetToken(ctx context.Context, username, password strin
 	return &token, nil
 }
 
-func (kc *KeycloakClient) RefreshToken(ctx context.Context, refreshToken string) (*domain.Token, error) {
+func (kc *KeycloakClient) RefreshToken(ctx context.Context, refreshToken string) (*sv.Token, error) {
 	stdCtx := asStdContext(ctx)
 
 	form := url.Values{}
@@ -99,7 +99,7 @@ func (kc *KeycloakClient) RefreshToken(ctx context.Context, refreshToken string)
 		return nil, fmt.Errorf("failed to refresh token: status %d, body %s", resp.StatusCode, string(body))
 	}
 
-	var token domain.Token
+	var token sv.Token
 	if err := json.NewDecoder(resp.Body).Decode(&token); err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (kc *KeycloakClient) GetBaseURL() string {
 	return kc.BaseURL
 }
 
-func NewKeycloakClient(cfg *config.Config) domain.Keycloak {
+func NewKeycloakClient(cfg *config.Config) sv.Keycloak {
 	return &KeycloakClient{
 		BaseURL: cfg.KeycloakURL,
 		Client:  &http.Client{Timeout: 5 * time.Second},
@@ -134,7 +134,7 @@ func NewKeycloakClient(cfg *config.Config) domain.Keycloak {
 	}
 }
 
-func InitKeycloakClient(cfg *config.Config, maxRetries int, interval time.Duration) (domain.Keycloak, error) {
+func InitKeycloakClient(cfg *config.Config, maxRetries int, interval time.Duration) (sv.Keycloak, error) {
 	kc := NewKeycloakClient(cfg)
 	for i := 0; i < maxRetries; i++ {
 		if err := kc.CheckHealth(); err == nil {

@@ -3,28 +3,29 @@ package repositories
 import (
 	"context"
 
-	"server/internal/iam/domain"
+	en "server/internal/iam/domain/entities"
+	rp "server/internal/iam/domain/repositories"
 
 	"gorm.io/gorm"
 )
 
-type GormRepository struct {
+type GormUserRepository struct {
 	rongstore_db *gorm.DB
 }
 
-func NewGormRepository(db *gorm.DB) domain.UserRepository {
-	return &GormRepository{
+func NewGormUserRepository(db *gorm.DB) rp.UserRepository {
+	return &GormUserRepository{
 		rongstore_db: db,
 	}
 }
 
-func (r *GormRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
+func (r *GormUserRepository) FindByEmail(ctx context.Context, email string) (*en.User, error) {
 	// var user domain.User
 	// err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	// if err != nil {
 	// 	return nil, err
 	// }
-	return &domain.User{
+	return &en.User{
 		ID: "ID", Email: "EMAIL", Password: "PASSWORD",
 	}, nil
 }
