@@ -4,7 +4,7 @@
 package wire
 
 import (
-	"server/internal/iam/application/usecases"
+	"server/internal/iam/application/usecases/auth"
 	"server/internal/iam/infrastructure/cache"
 	"server/internal/iam/infrastructure/client"
 	"server/internal/iam/infrastructure/repositories"
@@ -20,11 +20,11 @@ func InitializeIamHandler() (IamDeps, error) {
 		config.NewRedisClient,
 		config.NewGormDB,
 		client.NewKeycloakClient,
-		repositories.NewGormRepository,
+		repositories.NewGormUserRepository,
 		cache.RedisTTLFromConfig,
 		cache.NewRedisSessionStore,
-		usecases.NewLoginUserUsecase,
-		usecases.NewHandshakeUsecase,
+		auth.NewLoginUsecase,
+		auth.NewHandshakeUsecase,
 		grpc.NewIamHandler,
 		wire.Struct(new(IamDeps), "Handler", "Store", "Keycloak"),
 	)
