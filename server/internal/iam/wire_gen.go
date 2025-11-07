@@ -10,6 +10,7 @@ import (
 	"server/internal/iam/application/usecases/auth"
 	"server/internal/iam/infrastructure/cache"
 	"server/internal/iam/infrastructure/client"
+	"server/internal/iam/infrastructure/eventbus"
 	"server/internal/iam/infrastructure/repositories"
 	"server/internal/iam/interface/grpc"
 	"server/pkg/config"
@@ -31,10 +32,15 @@ func InitializeIamHandler() (IamDeps, error) {
 	sessionStore := cache.NewRedisSessionStore(redisClient, duration)
 	handshakeUsecase := auth.NewHandshakeUsecase(userRepository, sessionStore)
 	iamHandler := grpc.NewIamHandler(loginUsecase, handshakeUsecase)
+	rabbitMQEventBus, err := eventbus.NewEventBusFromConfig(configConfig)
+	if err != nil {
+		return IamDeps{}, err
+	}
 	iamDeps := IamDeps{
 		Handler:  iamHandler,
 		Store:    sessionStore,
 		Keycloak: keycloak,
+		EventBus: rabbitMQEventBus,
 	}
 	return iamDeps, nil
 }

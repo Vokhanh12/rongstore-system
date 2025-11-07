@@ -4,14 +4,14 @@ import (
 	"net/http"
 	"time"
 
-	"server/internal/iam/domain"
+	"server/internal/iam/domain/services"
 	"server/pkg/util/ctxutil"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
-func HTTPMiddleware(next http.Handler, store domain.SessionStore, serviceName string) http.Handler {
+func HTTPMiddleware(next http.Handler, store services.SessionStore, serviceName string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		ctx := r.Context()

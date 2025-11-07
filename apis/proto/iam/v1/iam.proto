@@ -4,7 +4,6 @@ package iam.v1;
 option go_package = "api/iam/v1;iamv1"; 
 
 import "google/api/annotations.proto";
-import "common/v1/base_response.proto";
 
 service IamService {
   rpc Login(LoginRequest) returns (LoginResponse) {

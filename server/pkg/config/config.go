@@ -46,6 +46,12 @@ type Config struct {
 	// ORSM
 	ORSMHost string
 	ORSMPort string
+
+	// RabitMQ
+	RabbitMQHost     string
+	RabbitMQPort     string
+	RabbitMQUser     string
+	RabbitMQPassword string
 }
 
 func Load() *Config {
@@ -92,6 +98,11 @@ func Load() *Config {
 		KeycloakSecret:       getEnv("KEYCLOAK_CLIENT_SECRET", ""),
 		KeycloakRedirect:     getEnv("KEYCLOAK_REDIRECT_URI", ""),
 		KeycloakScope:        getEnv("KEYCLOAK_SCOPE", ""),
+
+		RabbitMQHost:     getEnv("RABBITMQ_HOST", ""),
+		RabbitMQPort:     getEnv("RABBITMQ_PORT", ""),
+		RabbitMQUser:     getEnv("RABBITMQ_USER", ""),
+		RabbitMQPassword: getEnv("RABBITMQ_PASSWORD", ""),
 	}
 }
 

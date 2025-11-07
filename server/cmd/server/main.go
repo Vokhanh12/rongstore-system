@@ -14,10 +14,12 @@ import (
 	iampb "server/api/iam/v1"
 	wire "server/internal/iam"
 	"server/internal/iam/infrastructure/client"
+	"server/internal/iam/infrastructure/eventbus"
+	"server/pkg/auth"
 	"server/pkg/config"
 	"server/pkg/logger"
 	"server/pkg/metrics"
-	"server/pkg/observability"
+	obs_grpc "server/pkg/observability/grpc"
 )
 
 func main() {
@@ -30,6 +32,7 @@ func main() {
 	cfg := config.Load()
 	zlog.Info("config loaded", zap.String("keycloak_url", cfg.KeycloakURL))
 
+	// --- 1️⃣ Khởi động Prometheus metrics server ---
 	metrics.Register()
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
@@ -39,6 +42,7 @@ func main() {
 		}
 	}()
 
+	// --- 2️⃣ Kiểm tra Keycloak readiness ---
 	maxRetries := 10
 	interval := 3 * time.Second
 	zlog.Info("checking Keycloak readiness", zap.String("url", cfg.KeycloakURL))
@@ -48,25 +52,42 @@ func main() {
 	}
 	zlog.Info("Keycloak client ready", zap.String("base_url", kcClient.GetBaseURL()))
 
-	lis, err := net.Listen("tcp", ":50051")
+	// --- 3️⃣ Khởi tạo RabbitMQ EventBus ---
+	eventBus, err := eventbus.NewEventBusFromConfig(cfg)
 	if err != nil {
-		zlog.Fatal("failed to listen", zap.Error(err))
+		zlog.Fatal("failed to connect RabbitMQ", zap.Error(err))
 	}
+	defer func() {
+		_ = eventBus.Close()
+		zlog.Info("RabbitMQ connection closed")
+	}()
+	zlog.Info("RabbitMQ connected successfully")
 
+	// --- 4️⃣ Khởi tạo các dependencies của IAM ---
 	deps, err := wire.InitializeIamHandler()
 	if err != nil {
 		zlog.Fatal("failed to initialize IAM deps", zap.Error(err))
 	}
 
+	// Gán lại Keycloak client (vì client này dùng init khác Wire)
 	deps.Keycloak = kcClient
+	// Nếu usecase IAM cần EventBus, bạn có thể gán vào đây:
+	// deps.EventBus = eventBus
+
+	// --- 5️⃣ Khởi động gRPC Server ---
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		zlog.Fatal("failed to listen", zap.Error(err))
+	}
 
 	s := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
-			observability.GrpcTraceUnaryInterceptor(),
-			observability.UnaryServerInterceptor("iam_service", deps.Store, nil, false),
+			obs_grpc.TraceUnaryInterceptor(),
+			obs_grpc.AuthUnaryInterceptor(deps.Store, auth.DefaultGrpcRules()),
+			obs_grpc.MetricsUnaryInterceptor("iam_service"),
+			obs_grpc.LoggingUnaryInterceptor("iam_service"),
 		),
 	)
-
 	reflection.Register(s)
 	iampb.RegisterIamServiceServer(s, deps.Handler)
 

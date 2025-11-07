@@ -218,3 +218,57 @@
 {"level":"info","ts":"2025-08-28T16:59:47.707+0700","caller":"server/main.go:73","msg":"gRPC server started","addr":":50051"}
 {"level":"error","ts":"2025-08-28T16:59:50.560+0700","caller":"logger/log_helpers.go:118","msg":"error_event","service":"May-tinh-xach-tay-cua-Nguyen.local","event":"IamService/Handshake","trace_id":"abc123","instance":"May-tinh-xach-tay-cua-Nguyen.local","env":"unknown","error":"rpc error: code = Internal desc = AUTH-HAND-001: 400 client public key is required","stack":"","method":"/iam.v1.IamService/Handshake","stack":"server/pkg/logger.LogError\n\t/Users/vokhanh12/Development/rongstore-system/server/pkg/logger/log_helpers.go:118\nserver/pkg/observability.UnaryServerInterceptor.func1\n\t/Users/vokhanh12/Development/rongstore-system/server/pkg/observability/grpc_interceptor.go:185\ngoogle.golang.org/grpc.getChainUnaryHandler.func1\n\t/Users/vokhanh12/go/pkg/mod/google.golang.org/grpc@v1.74.2/server.go:1243\nserver/pkg/observability.GrpcTraceUnaryInterceptor.func1\n\t/Users/vokhanh12/Development/rongstore-system/server/pkg/observability/grpc_interceptor.go:77\ngoogle.golang.org/grpc.chainUnaryInterceptors.func1\n\t/Users/vokhanh12/go/pkg/mod/google.golang.org/grpc@v1.74.2/server.go:1234\nserver/api/iam/v1._IamService_Handshake_Handler\n\t/Users/vokhanh12/Development/rongstore-system/server/api/iam/v1/iam_grpc.pb.go:138\ngoogle.golang.org/grpc.(*Server).processUnaryRPC\n\t/Users/vokhanh12/go/pkg/mod/google.golang.org/grpc@v1.74.2/server.go:1431\ngoogle.golang.org/grpc.(*Server).handleStream\n\t/Users/vokhanh12/go/pkg/mod/google.golang.org/grpc@v1.74.2/server.go:1841\ngoogle.golang.org/grpc.(*Server).serveStreams.func2.1\n\t/Users/vokhanh12/go/pkg/mod/google.golang.org/grpc@v1.74.2/server.go:1061"}
 {"level":"info","ts":"2025-08-28T16:59:50.561+0700","caller":"logger/log_helpers.go:47","msg":"request_handled","service":"iam_service","handler":"IamService/Handshake","method":"/iam.v1.IamService/Handshake","trace_id":"abc123","status":"InternalError","latency_ms":0,"http_status":500,"ip":"127.0.0.1","user_agent":"","instance":"May-tinh-xach-tay-cua-Nguyen.local","env":"unknown","trace_id":"abc123","error_code":"CORE-INF-000"}
+{"level":"info","ts":"2025-11-07T12:02:55.610+0700","caller":"server/main.go:32","msg":"config loaded","keycloak_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:02:55.611+0700","caller":"server/main.go:45","msg":"checking Keycloak readiness","url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:02:55.611+0700","caller":"server/main.go:37","msg":"metrics endpoint started","addr":":9090"}
+{"level":"info","ts":"2025-11-07T12:02:56.161+0700","caller":"server/main.go:50","msg":"Keycloak client ready","base_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:02:56.865+0700","caller":"server/main.go:74","msg":"gRPC server started","addr":":50051"}
+{"level":"info","ts":"2025-11-07T12:06:55.621+0700","caller":"server/main.go:32","msg":"config loaded","keycloak_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:06:55.624+0700","caller":"server/main.go:45","msg":"checking Keycloak readiness","url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:06:55.625+0700","caller":"server/main.go:37","msg":"metrics endpoint started","addr":":9090"}
+{"level":"info","ts":"2025-11-07T12:06:55.793+0700","caller":"server/main.go:50","msg":"Keycloak client ready","base_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:06:56.509+0700","caller":"server/main.go:74","msg":"gRPC server started","addr":":50051"}
+{"level":"info","ts":"2025-11-07T12:13:58.261+0700","caller":"server/main.go:32","msg":"config loaded","keycloak_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:13:58.262+0700","caller":"server/main.go:45","msg":"checking Keycloak readiness","url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:13:58.262+0700","caller":"server/main.go:37","msg":"metrics endpoint started","addr":":9090"}
+{"level":"info","ts":"2025-11-07T12:13:58.907+0700","caller":"server/main.go:50","msg":"Keycloak client ready","base_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:13:59.985+0700","caller":"server/main.go:74","msg":"gRPC server started","addr":":50051"}
+{"level":"info","ts":"2025-11-07T12:16:08.501+0700","caller":"server/main.go:32","msg":"config loaded","keycloak_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:16:08.501+0700","caller":"server/main.go:45","msg":"checking Keycloak readiness","url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:16:08.502+0700","caller":"server/main.go:37","msg":"metrics endpoint started","addr":":9090"}
+{"level":"info","ts":"2025-11-07T12:16:33.897+0700","caller":"server/main.go:32","msg":"config loaded","keycloak_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:16:33.897+0700","caller":"server/main.go:45","msg":"checking Keycloak readiness","url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:16:33.897+0700","caller":"server/main.go:37","msg":"metrics endpoint started","addr":":9090"}
+{"level":"fatal","ts":"2025-11-07T12:17:04.024+0700","caller":"server/main.go:48","msg":"Keycloak is not ready","error":"Keycloak not ready after 10 retries","stack":"main.main\n\t/Users/vokhanh12/Development/rongstore-system/server/cmd/server/main.go:48\nruntime.main\n\t/usr/local/go/src/runtime/proc.go:283"}
+{"level":"info","ts":"2025-11-07T12:17:28.276+0700","caller":"server/main.go:32","msg":"config loaded","keycloak_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:17:28.276+0700","caller":"server/main.go:45","msg":"checking Keycloak readiness","url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:17:28.277+0700","caller":"server/main.go:37","msg":"metrics endpoint started","addr":":9090"}
+{"level":"info","ts":"2025-11-07T12:17:36.400+0700","caller":"server/main.go:50","msg":"Keycloak client ready","base_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:17:37.497+0700","caller":"server/main.go:74","msg":"gRPC server started","addr":":50051"}
+{"level":"info","ts":"2025-11-07T12:33:10.752+0700","caller":"server/main.go:32","msg":"config loaded","keycloak_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:33:10.752+0700","caller":"server/main.go:45","msg":"checking Keycloak readiness","url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:33:10.753+0700","caller":"server/main.go:37","msg":"metrics endpoint started","addr":":9090"}
+{"level":"info","ts":"2025-11-07T12:33:10.996+0700","caller":"server/main.go:50","msg":"Keycloak client ready","base_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:33:12.074+0700","caller":"server/main.go:74","msg":"gRPC server started","addr":":50051"}
+{"level":"info","ts":"2025-11-07T12:34:01.368+0700","caller":"server/main.go:32","msg":"config loaded","keycloak_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:34:01.368+0700","caller":"server/main.go:45","msg":"checking Keycloak readiness","url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:34:01.368+0700","caller":"server/main.go:37","msg":"metrics endpoint started","addr":":9090"}
+{"level":"info","ts":"2025-11-07T12:34:01.610+0700","caller":"server/main.go:50","msg":"Keycloak client ready","base_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T12:34:02.704+0700","caller":"server/main.go:74","msg":"gRPC server started","addr":":50051"}
+{"level":"info","ts":"2025-11-07T12:34:05.419+0700","caller":"logger/log_helpers.go:48","msg":"request handled","service":"iam_service","handler":"Handshake","method":"/iam.v1.IamService/Handshake","trace_id":"ce80b7bb-67a0-4310-ad1e-4fd0f0772f3e","status":"OK","latency_ms":242,"http_status":0,"ip":"127.0.0.1:52650","user_agent":"","instance":"May-tinh-xach-tay-cua-Nguyen.local","env":"unknown","event.type":"access","event.action":"request_handled","trace_id":"ce80b7bb-67a0-4310-ad1e-4fd0f0772f3e"}
+{"level":"info","ts":"2025-11-07T14:20:57.315+0700","caller":"server/main.go:33","msg":"config loaded","keycloak_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T14:20:57.315+0700","caller":"server/main.go:48","msg":"checking Keycloak readiness","url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T14:20:57.315+0700","caller":"server/main.go:39","msg":"metrics endpoint started","addr":":9090"}
+{"level":"info","ts":"2025-11-07T14:20:57.573+0700","caller":"server/main.go:53","msg":"Keycloak client ready","base_url":"http://100.114.31.30:9090"}
+{"level":"fatal","ts":"2025-11-07T14:20:57.573+0700","caller":"server/main.go:58","msg":"failed to connect RabbitMQ","error":"failed to connect to RabbitMQ: parse \"amqp://:@:%!d(string=)/\": invalid port \":%!d(string=)\" after host","stack":"main.main\n\t/Users/vokhanh12/Development/rongstore-system/server/cmd/server/main.go:58\nruntime.main\n\t/usr/local/go/src/runtime/proc.go:283"}
+{"level":"info","ts":"2025-11-07T14:25:01.100+0700","caller":"server/main.go:33","msg":"config loaded","keycloak_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T14:25:01.100+0700","caller":"server/main.go:48","msg":"checking Keycloak readiness","url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T14:25:01.100+0700","caller":"server/main.go:39","msg":"metrics endpoint started","addr":":9090"}
+{"level":"info","ts":"2025-11-07T14:25:01.340+0700","caller":"server/main.go:53","msg":"Keycloak client ready","base_url":"http://100.114.31.30:9090"}
+{"level":"fatal","ts":"2025-11-07T14:25:01.340+0700","caller":"server/main.go:58","msg":"failed to connect RabbitMQ","error":"failed to connect to RabbitMQ: parse \"amqp://admin:admin@100.114.31.30:%!d(string=5672)/\": invalid port \":%!d(string=5672)\" after host","stack":"main.main\n\t/Users/vokhanh12/Development/rongstore-system/server/cmd/server/main.go:58\nruntime.main\n\t/usr/local/go/src/runtime/proc.go:283"}
+{"level":"info","ts":"2025-11-07T14:27:24.490+0700","caller":"server/main.go:33","msg":"config loaded","keycloak_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T14:27:24.490+0700","caller":"server/main.go:48","msg":"checking Keycloak readiness","url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T14:27:24.490+0700","caller":"server/main.go:39","msg":"metrics endpoint started","addr":":9090"}
+{"level":"info","ts":"2025-11-07T14:27:24.730+0700","caller":"server/main.go:53","msg":"Keycloak client ready","base_url":"http://100.114.31.30:9090"}
+{"level":"info","ts":"2025-11-07T14:27:25.335+0700","caller":"server/main.go:64","msg":"RabbitMQ connected successfully"}
+{"level":"info","ts":"2025-11-07T14:27:27.056+0700","caller":"server/main.go:94","msg":"gRPC server started","addr":":50051"}
