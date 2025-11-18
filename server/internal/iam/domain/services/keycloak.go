@@ -14,9 +14,16 @@ type Token struct {
 	Scope            string `json:"scope"`
 }
 
+type Permission struct {
+	Rsid   string   `json:"rsid"`
+	Rsname string   `json:"rsname"`
+	Scopes []string `json:"scopes"`
+}
+
 type Keycloak interface {
 	GetToken(ctx context.Context, username, password string) (*Token, error)
 	RefreshToken(ctx context.Context, refreshToken string) (*Token, error)
 	CheckHealth() error
 	GetBaseURL() string
+	GetUserPermissions(ctx context.Context, accessToken string) ([]Permission, error)
 }

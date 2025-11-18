@@ -9,7 +9,13 @@ message ErrorDetail {
 }
 
 message Error {
-  string code = 1;
-  string message = 2;
-  repeated ErrorDetail details = 3;
+  string code = 1;         // AUTH-HAND-001
+  string key = 2;          // HANDSHAKE_INVALID_CLIENT_KEY
+  string message = 3;      // "Invalid client public key"
+  string severity = 4;     // S1/S2/S3
+  bool retryable = 5;      // true/false
+  string source = 6;       // iam-service, gateway,...
+  string grpc_code = 7;    // InvalidArgument
+  int32 http_status = 8;   // 400, 401, 500...
+  repeated ErrorDetail details = 9;
 }

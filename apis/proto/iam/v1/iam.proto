@@ -4,16 +4,17 @@ package iam.v1;
 option go_package = "api/iam/v1;iamv1"; 
 
 import "google/api/annotations.proto";
+import "common/v1/base_response.proto";
 
 service IamService {
-  rpc Login(LoginRequest) returns (LoginResponse) {
+  rpc Login(LoginRequest) returns (common.v1.BaseResponse) {
     option (google.api.http) = {
       post: "/v1/login"
       body: "*"
     };
   }
 
-  rpc Handshake(HandshakeRequest) returns (HandshakeResponse) {
+  rpc Handshake(HandshakeRequest) returns (common.v1.BaseResponse) {
     option (google.api.http) = {
       post: "/v1/handshake"
       body: "*"

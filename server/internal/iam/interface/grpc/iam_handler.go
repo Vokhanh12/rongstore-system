@@ -2,13 +2,16 @@ package grpc
 
 import (
 	"context"
+	"time"
 
+	commonv1 "server/api/common/v1"
 	iamv1 "server/api/iam/v1"
 
 	usecases "server/internal/iam/application/usecases/auth"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type IamHandler struct {
@@ -27,7 +30,7 @@ func NewIamHandler(
 	}
 }
 
-func (h *IamHandler) Login(ctx context.Context, req *iamv1.LoginRequest) (*iamv1.LoginResponse, error) {
+func (h *IamHandler) Login(ctx context.Context, req *iamv1.LoginRequest) (*commonv1.BaseResponse, error) {
 
 	cmd := usecases.MapLoginRequestToCommand(req)
 
@@ -37,13 +40,24 @@ func (h *IamHandler) Login(ctx context.Context, req *iamv1.LoginRequest) (*iamv1
 	}
 
 	resDTO := usecases.MapLoginResultToResponseDTO(result)
-	return &iamv1.LoginResponse{
-		AccessToken:  resDTO.AccessToken,
-		RefreshToken: resDTO.RefreshToken,
+	anyData, err := anypb.New(&resDTO)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to marshal response")
+	}
+
+	return &commonv1.BaseResponse{
+		Success: true,
+		Data:    anyData,
+		Metadata: &commonv1.Metadata{
+			TraceId:   "trace-id-example",
+			RequestId: "req-id-example",
+			Timestamp: time.Now().UTC().Format(time.RFC3339),
+		},
 	}, nil
+
 }
 
-func (h *IamHandler) Handshake(ctx context.Context, req *iamv1.HandshakeRequest) (*iamv1.HandshakeResponse, error) {
+func (h *IamHandler) Handshake(ctx context.Context, req *iamv1.HandshakeRequest) (*commonv1.BaseResponse, error) {
 
 	cmd := usecases.MapHandshakeRequestToCommand(req)
 
@@ -53,11 +67,17 @@ func (h *IamHandler) Handshake(ctx context.Context, req *iamv1.HandshakeRequest)
 	}
 
 	resDTO := usecases.MapHandshakeResultToResponseDTO(result)
-	return &iamv1.HandshakeResponse{
-		ServerPublicKey:      resDTO.ServerPublicKey,
-		SessionId:            resDTO.SessionId,
-		HkdfSaltB64:          resDTO.HkdfSaltB64,
-		ExpiresAt:            resDTO.ExpiresAt,
-		EncryptedSessionData: resDTO.EncryptedSessionData,
+	anyData, err := anypb.New(&resDTO)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to marshal response")
+	}
+	return &commonv1.BaseResponse{
+		Success: true,
+		Data:    anyData,
+		Metadata: &commonv1.Metadata{
+			TraceId:   "trace-id-example",
+			RequestId: "req-id-example",
+			Timestamp: time.Now().UTC().Format(time.RFC3339),
+		},
 	}, nil
 }

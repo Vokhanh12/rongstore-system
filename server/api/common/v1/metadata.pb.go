@@ -25,6 +25,7 @@ type Metadata struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Timestamp     string                 `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	RequestId     string                 `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	TraceId       string                 `protobuf:"bytes,3,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -73,15 +74,23 @@ func (x *Metadata) GetRequestId() string {
 	return ""
 }
 
+func (x *Metadata) GetTraceId() string {
+	if x != nil {
+		return x.TraceId
+	}
+	return ""
+}
+
 var File_common_v1_metadata_proto protoreflect.FileDescriptor
 
 const file_common_v1_metadata_proto_rawDesc = "" +
 	"\n" +
-	"\x18common/v1/metadata.proto\x12\tcommon.v1\"G\n" +
+	"\x18common/v1/metadata.proto\x12\tcommon.v1\"b\n" +
 	"\bMetadata\x12\x1c\n" +
 	"\ttimestamp\x18\x01 \x01(\tR\ttimestamp\x12\x1d\n" +
 	"\n" +
-	"request_id\x18\x02 \x01(\tR\trequestIdB\x18Z\x16api/common/v1;commonv1b\x06proto3"
+	"request_id\x18\x02 \x01(\tR\trequestId\x12\x19\n" +
+	"\btrace_id\x18\x03 \x01(\tR\atraceIdB\x18Z\x16api/common/v1;commonv1b\x06proto3"
 
 var (
 	file_common_v1_metadata_proto_rawDescOnce sync.Once

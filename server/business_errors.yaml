@@ -7,7 +7,6 @@ services:
     conventions:
       code_format: "<DOMAIN>-<AREA>-<NNN>"
       domain: "AUTH"
-a
       severity_scale:
         S1: "Critical outage/security risk"
         S2: "Degraded experience or important failure"
@@ -17,6 +16,51 @@ a
         grpc_retryable: ["Unavailable", "DeadlineExceeded"]
 
     errors:
+      VAL:     # 🔥 Thêm nhóm Validation
+        - code: AUTH-VAL-001
+          key: LOGIN_EMAIL_EMPTY
+          http_status: 400
+          grpc_code: InvalidArgument
+          message: "Email is required"
+          severity: S3
+          retryable: false
+          cause: "Missing email in login request"
+          client_action: "Ask user to enter email"
+          server_action: "Log debug; no alert"
+
+        - code: AUTH-VAL-002
+          key: LOGIN_EMAIL_INVALID
+          http_status: 400
+          grpc_code: InvalidArgument
+          message: "Invalid email format"
+          severity: S3
+          retryable: false
+          cause: "Email does not match RFC regex"
+          client_action: "Validate email before submitting"
+          server_action: "Log debug for malformed input"
+
+        - code: AUTH-VAL-003
+          key: LOGIN_PASSWORD_EMPTY
+          http_status: 400
+          grpc_code: InvalidArgument
+          message: "Password is required"
+          severity: S3
+          retryable: false
+          cause: "Missing password in login request"
+          client_action: "Ask user to re-enter password"
+          server_action: "Log debug"
+
+        - code: AUTH-VAL-004
+          key: LOGIN_PAYLOAD_INVALID
+          http_status: 400
+          grpc_code: InvalidArgument
+          message: "Invalid request payload"
+          severity: S3
+          retryable: false
+          cause: "Malformed JSON or missing fields"
+          client_action: "Fix request body"
+          server_action: "Log warn for debug purposes"
+
       HAND:
         - code: AUTH-HAND-001
           key: HANDSHAKE_INVALID_CLIENT_KEY
@@ -171,6 +215,7 @@ defaults:
     http_status: 400
     grpc_code: InvalidArgument
     message: "Unknown domain error"
+
   internal_fallback:
     code: CORE-INF-000
     http_status: 500

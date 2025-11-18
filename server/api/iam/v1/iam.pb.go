@@ -7,7 +7,7 @@
 package iamv1
 
 import (
-	_ "server/api/common/v1"
+	v1 "server/api/common/v1"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -269,9 +269,9 @@ const file_iam_v1_iam_proto_rawDesc = "" +
 	"expires_at\x18\x04 \x01(\x05R\texpiresAt\x124\n" +
 	"\x16encrypted_session_data\x18\x05 \x01(\tR\x14encryptedSessionData2\xb4\x01\n" +
 	"\n" +
-	"IamService\x12J\n" +
-	"\x05Login\x12\x14.iam.v1.LoginRequest\x1a\x15.iam.v1.LoginResponse\"\x14\x82\xd3\xe4\x93\x02\x0e:\x01*\"\t/v1/login\x12Z\n" +
-	"\tHandshake\x12\x18.iam.v1.HandshakeRequest\x1a\x19.iam.v1.HandshakeResponse\"\x18\x82\xd3\xe4\x93\x02\x12:\x01*\"\r/v1/handshakeB\x12Z\x10api/iam/v1;iamv1b\x06proto3"
+	"IamService\x12L\n" +
+	"\x05Login\x12\x14.iam.v1.LoginRequest\x1a\x17.common.v1.BaseResponse\"\x14\x82\xd3\xe4\x93\x02\x0e:\x01*\"\t/v1/login\x12X\n" +
+	"\tHandshake\x12\x18.iam.v1.HandshakeRequest\x1a\x17.common.v1.BaseResponse\"\x18\x82\xd3\xe4\x93\x02\x12:\x01*\"\r/v1/handshakeB\x12Z\x10api/iam/v1;iamv1b\x06proto3"
 
 var (
 	file_iam_v1_iam_proto_rawDescOnce sync.Once
@@ -291,12 +291,13 @@ var file_iam_v1_iam_proto_goTypes = []any{
 	(*LoginResponse)(nil),     // 1: iam.v1.LoginResponse
 	(*HandshakeRequest)(nil),  // 2: iam.v1.HandshakeRequest
 	(*HandshakeResponse)(nil), // 3: iam.v1.HandshakeResponse
+	(*v1.BaseResponse)(nil),   // 4: common.v1.BaseResponse
 }
 var file_iam_v1_iam_proto_depIdxs = []int32{
 	0, // 0: iam.v1.IamService.Login:input_type -> iam.v1.LoginRequest
 	2, // 1: iam.v1.IamService.Handshake:input_type -> iam.v1.HandshakeRequest
-	1, // 2: iam.v1.IamService.Login:output_type -> iam.v1.LoginResponse
-	3, // 3: iam.v1.IamService.Handshake:output_type -> iam.v1.HandshakeResponse
+	4, // 2: iam.v1.IamService.Login:output_type -> common.v1.BaseResponse
+	4, // 3: iam.v1.IamService.Handshake:output_type -> common.v1.BaseResponse
 	2, // [2:4] is the sub-list for method output_type
 	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name

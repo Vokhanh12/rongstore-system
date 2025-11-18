@@ -31,13 +31,16 @@ type Config struct {
 	RedisTTL      int
 
 	// Keycloak
-	KeycloakURL          string
-	KeycloakServerHealth string
-	KeycloakRealm        string
-	KeycloakClientID     string
-	KeycloakSecret       string
-	KeycloakRedirect     string
-	KeycloakScope        string
+	KeycloakURL                     string
+	KeycloakServerHealth            string
+	KeycloakRealm                   string
+	KeycloakClientID                string
+	KeycloakSecret                  string
+	KeycloakRedirect                string
+	KeycloakScope                   string
+	KeycloakGrantUmaTicketType      string
+	KeycloakAudience                string
+	KeycloakResponsePermissionsMode string
 
 	// Title-gl
 	TitleGlHost string
@@ -91,13 +94,16 @@ func Load() *Config {
 		RedisDB:       redisDB,
 		RedisTTL:      redisTTL,
 
-		KeycloakURL:          getEnv("KEYCLOAK_SERVER_URL", ""),
-		KeycloakServerHealth: getEnv("KEYCLOAK_SERVER_HEALTH", ""),
-		KeycloakRealm:        getEnv("KEYCLOAK_REALM", ""),
-		KeycloakClientID:     getEnv("KEYCLOAK_CLIENT_ID", ""),
-		KeycloakSecret:       getEnv("KEYCLOAK_CLIENT_SECRET", ""),
-		KeycloakRedirect:     getEnv("KEYCLOAK_REDIRECT_URI", ""),
-		KeycloakScope:        getEnv("KEYCLOAK_SCOPE", ""),
+		KeycloakURL:                     getEnv("KEYCLOAK_SERVER_URL", ""),
+		KeycloakServerHealth:            getEnv("KEYCLOAK_SERVER_HEALTH", ""),
+		KeycloakRealm:                   getEnv("KEYCLOAK_REALM", ""),
+		KeycloakClientID:                getEnv("KEYCLOAK_CLIENT_ID", ""),
+		KeycloakSecret:                  getEnv("KEYCLOAK_CLIENT_SECRET", ""),
+		KeycloakRedirect:                getEnv("KEYCLOAK_REDIRECT_URI", ""),
+		KeycloakScope:                   getEnv("KEYCLOAK_SCOPE", ""),
+		KeycloakGrantUmaTicketType:      getEnv("KEYCLOAK_GRANT_UMA_TICKET_TYPE", ""),
+		KeycloakAudience:                getEnv("KEYCLOAK_AUDIENCE", ""),
+		KeycloakResponsePermissionsMode: getEnv("KEYCLOAK_RESPONSE_PERMISSIONS_MODE", ""),
 
 		RabbitMQHost:     getEnv("RABBITMQ_HOST", ""),
 		RabbitMQPort:     getEnv("RABBITMQ_PORT", ""),

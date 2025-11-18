@@ -3,6 +3,38 @@ package domain
 import "server/pkg/errors"
 
 var (
+	LOGIN_EMAIL_EMPTY = errors.BusinessError{
+		Code: "AUTH-VAL-001",
+		Status: 400,
+		Message: "Email is required",
+		Severity: "S3",
+		Retryable: false,
+	}
+
+	LOGIN_EMAIL_INVALID = errors.BusinessError{
+		Code: "AUTH-VAL-002",
+		Status: 400,
+		Message: "Invalid email format",
+		Severity: "S3",
+		Retryable: false,
+	}
+
+	LOGIN_PASSWORD_EMPTY = errors.BusinessError{
+		Code: "AUTH-VAL-003",
+		Status: 400,
+		Message: "Password is required",
+		Severity: "S3",
+		Retryable: false,
+	}
+
+	LOGIN_PAYLOAD_INVALID = errors.BusinessError{
+		Code: "AUTH-VAL-004",
+		Status: 400,
+		Message: "Invalid request payload",
+		Severity: "S3",
+		Retryable: false,
+	}
+
 	HANDSHAKE_INVALID_CLIENT_KEY = errors.BusinessError{
 		Code: "AUTH-HAND-001",
 		Status: 400,

@@ -7,7 +7,7 @@ GO_OUT="../server/api"
 DART_OUT="../client/lib/features/api"
 ### ===============================================
 
-# Màu sắc log (đẹp tí cho dễ nhìn)
+# Màu sắc log
 BOLD="\033[1m"; RED="\033[31m"; GREEN="\033[32m"; YELLOW="\033[33m"; NC="\033[0m"
 
 log() { echo -e "${BOLD}${GREEN}[OK]${NC} $*"; }
@@ -29,7 +29,7 @@ need protoc || {
   exit 1
 }
 
-# Go plugins
+# Kiểm tra Go plugin
 GO_PB_PLUGIN="protoc-gen-go"
 GO_GRPC_PLUGIN="protoc-gen-go-grpc"
 if ! command -v "${GO_PB_PLUGIN}" >/dev/null 2>&1 || ! command -v "${GO_GRPC_PLUGIN}" >/dev/null 2>&1; then
@@ -40,7 +40,7 @@ if ! command -v "${GO_PB_PLUGIN}" >/dev/null 2>&1 || ! command -v "${GO_GRPC_PLU
   echo "  export PATH=\"\$(go env GOPATH)/bin:\$PATH\""
 fi
 
-# Dart plugin
+# Kiểm tra Dart plugin
 if ! command -v protoc-gen-dart >/dev/null 2>&1; then
   warn "Chưa thấy protoc-gen-dart trong PATH."
   echo "Cài đặt nhanh:"
@@ -48,23 +48,28 @@ if ! command -v protoc-gen-dart >/dev/null 2>&1; then
   echo "  export PATH=\"\$HOME/.pub-cache/bin:\$PATH\""
 fi
 
-### 2) Kiểm tra thư mục
+### 2) Kiểm tra thư mục proto
 [[ -d "$PROTO_DIR" ]] || { err "Không tìm thấy thư mục $PROTO_DIR"; exit 1; }
-mkdir -p "$GO_OUT" "$DART_OUT"
 
-### 3) Lấy danh sách .proto (bỏ qua google/**)
+### 3) Clean thư mục output
+echo -e "${BOLD}---> Cleaning output folders...${NC}"
+rm -rf "$GO_OUT"/* "$DART_OUT"/* 2>/dev/null || true
+mkdir -p "$GO_OUT" "$DART_OUT"
+log "Thư mục output đã sạch."
+
+### 4) Lấy danh sách .proto (bỏ qua google/**)
 # shellcheck disable=SC2207
 PROTO_FILES=($(find "$PROTO_DIR" -type f -name '*.proto' ! -path "$PROTO_DIR/google/*" | sort))
 
 if [[ ${#PROTO_FILES[@]} -eq 0 ]]; then
-  err "Không tìm thấy file .proto nào trong $PROTO_DIR (ngoài google/*)."
+  err "Không tìm thấy file .proto nào trong $PROTO_DIR (ngoại trừ google/*)."
   exit 1
 fi
 
 echo "Sẽ generate cho các file:"
 for f in "${PROTO_FILES[@]}"; do echo "  - $f"; done
 
-### 4) Generate cho Go
+### 5) Generate cho Go
 echo -e "\n${BOLD}---> Generating Go files vào: ${GO_OUT}${NC}"
 protoc \
   -I="$PROTO_DIR" \
@@ -73,7 +78,7 @@ protoc \
   "${PROTO_FILES[@]}"
 log "Go: xong."
 
-### 5) Generate cho Dart
+### 6) Generate cho Dart
 echo -e "\n${BOLD}---> Generating Dart files vào: ${DART_OUT}${NC}"
 protoc \
   -I="$PROTO_DIR" \
@@ -81,10 +86,10 @@ protoc \
   "${PROTO_FILES[@]}"
 log "Dart: xong."
 
-### 6) Tóm tắt
-echo -e "\n${BOLD}Done.${NC}"
+### 7) Tóm tắt
+echo -e "\n${BOLD}=== DONE ===${NC}"
 echo "Go   => $GO_OUT"
 echo "Dart => $DART_OUT"
-echo -e "${BOLD}Gợi ý:${NC} nhớ add dependency:"
+echo -e "${BOLD}Gợi ý thêm dependency:${NC}"
 echo "  Go:   go get google.golang.org/grpc google.golang.org/protobuf"
 echo "  Dart: flutter pub add grpc   (hoặc: dart pub add grpc)"

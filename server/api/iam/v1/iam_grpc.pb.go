@@ -7,6 +7,7 @@
 package iamv1
 
 import (
+	v1 "server/api/common/v1"
 	context "context"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -27,8 +28,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type IamServiceClient interface {
-	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
-	Handshake(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error)
+	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*v1.BaseResponse, error)
+	Handshake(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*v1.BaseResponse, error)
 }
 
 type iamServiceClient struct {
@@ -39,9 +40,9 @@ func NewIamServiceClient(cc grpc.ClientConnInterface) IamServiceClient {
 	return &iamServiceClient{cc}
 }
 
-func (c *iamServiceClient) Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
+func (c *iamServiceClient) Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*v1.BaseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(LoginResponse)
+	out := new(v1.BaseResponse)
 	err := c.cc.Invoke(ctx, IamService_Login_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -49,9 +50,9 @@ func (c *iamServiceClient) Login(ctx context.Context, in *LoginRequest, opts ...
 	return out, nil
 }
 
-func (c *iamServiceClient) Handshake(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error) {
+func (c *iamServiceClient) Handshake(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*v1.BaseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(HandshakeResponse)
+	out := new(v1.BaseResponse)
 	err := c.cc.Invoke(ctx, IamService_Handshake_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -63,8 +64,8 @@ func (c *iamServiceClient) Handshake(ctx context.Context, in *HandshakeRequest, 
 // All implementations must embed UnimplementedIamServiceServer
 // for forward compatibility.
 type IamServiceServer interface {
-	Login(context.Context, *LoginRequest) (*LoginResponse, error)
-	Handshake(context.Context, *HandshakeRequest) (*HandshakeResponse, error)
+	Login(context.Context, *LoginRequest) (*v1.BaseResponse, error)
+	Handshake(context.Context, *HandshakeRequest) (*v1.BaseResponse, error)
 	mustEmbedUnimplementedIamServiceServer()
 }
 
@@ -75,10 +76,10 @@ type IamServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedIamServiceServer struct{}
 
-func (UnimplementedIamServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
+func (UnimplementedIamServiceServer) Login(context.Context, *LoginRequest) (*v1.BaseResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
 }
-func (UnimplementedIamServiceServer) Handshake(context.Context, *HandshakeRequest) (*HandshakeResponse, error) {
+func (UnimplementedIamServiceServer) Handshake(context.Context, *HandshakeRequest) (*v1.BaseResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Handshake not implemented")
 }
 func (UnimplementedIamServiceServer) mustEmbedUnimplementedIamServiceServer() {}

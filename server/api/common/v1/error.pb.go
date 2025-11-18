@@ -83,9 +83,15 @@ func (x *ErrorDetail) GetCode() string {
 
 type Error struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	Details       []*ErrorDetail         `protobuf:"bytes,3,rep,name=details,proto3" json:"details,omitempty"`
+	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`                                // AUTH-HAND-001
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`                                  // HANDSHAKE_INVALID_CLIENT_KEY
+	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`                          // "Invalid client public key"
+	Severity      string                 `protobuf:"bytes,4,opt,name=severity,proto3" json:"severity,omitempty"`                        // S1/S2/S3
+	Retryable     bool                   `protobuf:"varint,5,opt,name=retryable,proto3" json:"retryable,omitempty"`                     // true/false
+	Source        string                 `protobuf:"bytes,6,opt,name=source,proto3" json:"source,omitempty"`                            // iam-service, gateway,...
+	GrpcCode      string                 `protobuf:"bytes,7,opt,name=grpc_code,json=grpcCode,proto3" json:"grpc_code,omitempty"`        // InvalidArgument
+	HttpStatus    int32                  `protobuf:"varint,8,opt,name=http_status,json=httpStatus,proto3" json:"http_status,omitempty"` // 400, 401, 500...
+	Details       []*ErrorDetail         `protobuf:"bytes,9,rep,name=details,proto3" json:"details,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -127,11 +133,53 @@ func (x *Error) GetCode() string {
 	return ""
 }
 
+func (x *Error) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
 func (x *Error) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
 	return ""
+}
+
+func (x *Error) GetSeverity() string {
+	if x != nil {
+		return x.Severity
+	}
+	return ""
+}
+
+func (x *Error) GetRetryable() bool {
+	if x != nil {
+		return x.Retryable
+	}
+	return false
+}
+
+func (x *Error) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *Error) GetGrpcCode() string {
+	if x != nil {
+		return x.GrpcCode
+	}
+	return ""
+}
+
+func (x *Error) GetHttpStatus() int32 {
+	if x != nil {
+		return x.HttpStatus
+	}
+	return 0
 }
 
 func (x *Error) GetDetails() []*ErrorDetail {
@@ -149,11 +197,18 @@ const file_common_v1_error_proto_rawDesc = "" +
 	"\vErrorDetail\x12\x14\n" +
 	"\x05field\x18\x01 \x01(\tR\x05field\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x12\n" +
-	"\x04code\x18\x03 \x01(\tR\x04code\"g\n" +
+	"\x04code\x18\x03 \x01(\tR\x04code\"\x89\x02\n" +
 	"\x05Error\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x120\n" +
-	"\adetails\x18\x03 \x03(\v2\x16.common.v1.ErrorDetailR\adetailsB\x18Z\x16api/common/v1;commonv1b\x06proto3"
+	"\x04code\x18\x01 \x01(\tR\x04code\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\x12\x1a\n" +
+	"\bseverity\x18\x04 \x01(\tR\bseverity\x12\x1c\n" +
+	"\tretryable\x18\x05 \x01(\bR\tretryable\x12\x16\n" +
+	"\x06source\x18\x06 \x01(\tR\x06source\x12\x1b\n" +
+	"\tgrpc_code\x18\a \x01(\tR\bgrpcCode\x12\x1f\n" +
+	"\vhttp_status\x18\b \x01(\x05R\n" +
+	"httpStatus\x120\n" +
+	"\adetails\x18\t \x03(\v2\x16.common.v1.ErrorDetailR\adetailsB\x18Z\x16api/common/v1;commonv1b\x06proto3"
 
 var (
 	file_common_v1_error_proto_rawDescOnce sync.Once

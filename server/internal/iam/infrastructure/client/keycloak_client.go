@@ -23,18 +23,29 @@ type KeycloakClient struct {
 	Health  string
 }
 
-func asStdContext(ctx context.Context) context.Context {
-	if ctx == nil {
-		return context.Background()
+func (kc *KeycloakClient) GetUserPermissions(ctx context.Context, accessToken string) ([]sv.Permission, error) {
+
+	form := url.Values{}
+	form.Set("grant_type", kc.Config.KeycloakGrantUmaTicketType)
+	form.Set("audience", kc.Config.KeycloakAudience)
+	form.Set("response_mode", kc.Config.KeycloakResponsePermissionsMode)
+
+	url := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token", kc.BaseURL, kc.Config.KeycloakRealm)
+	body := bytes.NewBufferString(form.Encode())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
+
+	if err != nil {
+		return nil, err
 	}
-	if std, ok := ctx.(context.Context); ok {
-		return std
-	}
-	return context.Background()
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	return nil, nil
+
 }
 
 func (kc *KeycloakClient) GetToken(ctx context.Context, username, password string) (*sv.Token, error) {
-	stdCtx := asStdContext(ctx)
 
 	form := url.Values{}
 	form.Set("grant_type", "password")
@@ -44,23 +55,36 @@ func (kc *KeycloakClient) GetToken(ctx context.Context, username, password strin
 	form.Set("password", password)
 	form.Set("scope", kc.Config.KeycloakScope)
 
-	req, err := http.NewRequestWithContext(stdCtx, http.MethodPost,
-		fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token", kc.BaseURL, kc.Config.KeycloakRealm),
-		bytes.NewBufferString(form.Encode()))
+	url := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token", kc.BaseURL, kc.Config.KeycloakRealm)
+	body := bytes.NewBufferString(form.Encode())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
+
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := kc.Client.Do(req)
+
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		var keycloakErr struct {
+			Error            string `json:"error"`
+			ErrorDescription string `json:"error_description"`
+		}
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("failed to get token: status %d, body %s", resp.StatusCode, string(body))
+		if err := json.Unmarshal(body, &keycloakErr); err != nil {
+			return nil, fmt.Errorf("failed to get token: status %d, body %s", resp.StatusCode, string(body))
+		}
+
+		return nil, fmt.Errorf("keycloak error: %s - %s", keycloakErr.Error, keycloakErr.ErrorDescription)
 	}
 
 	var token sv.Token
@@ -72,7 +96,6 @@ func (kc *KeycloakClient) GetToken(ctx context.Context, username, password strin
 }
 
 func (kc *KeycloakClient) RefreshToken(ctx context.Context, refreshToken string) (*sv.Token, error) {
-	stdCtx := asStdContext(ctx)
 
 	form := url.Values{}
 	form.Set("grant_type", "refresh_token")
@@ -80,7 +103,7 @@ func (kc *KeycloakClient) RefreshToken(ctx context.Context, refreshToken string)
 	form.Set("client_secret", kc.Config.KeycloakSecret)
 	form.Set("refresh_token", refreshToken)
 
-	req, err := http.NewRequestWithContext(stdCtx, http.MethodPost,
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token", kc.BaseURL, kc.Config.KeycloakRealm),
 		bytes.NewBufferString(form.Encode()))
 	if err != nil {
