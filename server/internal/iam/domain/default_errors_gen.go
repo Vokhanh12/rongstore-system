@@ -95,7 +95,23 @@ var (
 	DB_TIMEOUT = errors.BusinessError{
 		Code: "AUTH-INFRA-001",
 		Status: 503,
-		Message: "Service temporarily unavailable",
+		Message: "Database service temporarily unavailable",
+		Severity: "S1",
+		Retryable: true,
+	}
+
+	REDIS_UNAVAILABLE = errors.BusinessError{
+		Code: "AUTH-INFRA-002",
+		Status: 503,
+		Message: "Redis cache temporarily unavailable",
+		Severity: "S1",
+		Retryable: true,
+	}
+
+	KEYCLOAK_UNAVAILABLE = errors.BusinessError{
+		Code: "AUTH-INFRA-003",
+		Status: 503,
+		Message: "Keycloak service temporarily unavailable",
 		Severity: "S1",
 		Retryable: true,
 	}
@@ -132,6 +148,8 @@ var ErrorByCode = map[string]errors.BusinessError{
 	"AUTH-LOGIN-001": INVALID_CREDENTIALS,
 	"AUTH-TOKEN-001": TOKEN_EXPIRED,
 	"AUTH-INFRA-001": DB_TIMEOUT,
+	"AUTH-INFRA-002": REDIS_UNAVAILABLE,
+	"AUTH-INFRA-003": KEYCLOAK_UNAVAILABLE,
 	"AUTH-VAL-999": UNKNOWN_DOMAIN_KEY,
 	"CORE-INF-000": INTERNAL_FALLBACK,
 }

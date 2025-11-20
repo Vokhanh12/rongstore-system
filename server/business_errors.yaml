@@ -142,16 +142,38 @@ services:
           server_action: "Log info; track token expiry patterns"
 
       INFRA:
-        - code: AUTH-INFRA-001
-          key: DB_TIMEOUT
-          http_status: 503
-          grpc_code: Unavailable
-          message: "Service temporarily unavailable"
-          severity: S1
-          retryable: true
-          cause: "Database timeout or overload"
-          client_action: "Retry with exponential backoff"
-          server_action: "Alert; check DB health/capacity"
+      - code: AUTH-INFRA-001
+        key: DB_TIMEOUT
+        http_status: 503
+        grpc_code: Unavailable
+        message: "Database service temporarily unavailable"
+        severity: S1
+        retryable: true
+        cause: "Database timeout or overload"
+        client_action: "Retry with exponential backoff"
+        server_action: "Alert; check DB health/capacity"
+
+      - code: AUTH-INFRA-002
+        key: REDIS_UNAVAILABLE
+        http_status: 503
+        grpc_code: Unavailable
+        message: "Redis cache temporarily unavailable"
+        severity: S1
+        retryable: true
+        cause: "Redis connection failed or timeout"
+        client_action: "Retry operation after delay"
+        server_action: "Alert; check Redis cluster health"
+
+      - code: AUTH-INFRA-003
+        key: KEYCLOAK_UNAVAILABLE
+        http_status: 503
+        grpc_code: Unavailable
+        message: "Keycloak service temporarily unavailable"
+        severity: S1
+        retryable: true
+        cause: "Keycloak server unreachable or timeout"
+        client_action: "Retry authentication/authorization"
+        server_action: "Alert; verify Keycloak server status"
 
   hr:
     conventions:

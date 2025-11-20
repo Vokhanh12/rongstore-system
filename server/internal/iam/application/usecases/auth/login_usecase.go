@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"regexp"
 	iamv1 "server/api/iam/v1"
 	"server/internal/iam/domain"
 	rp "server/internal/iam/domain/repositories"
@@ -54,10 +55,10 @@ func (u *LoginUsecase) Execute(ctx context.Context, cmd LoginCommand) (*LoginRes
 		return nil, errors.NewBusinessError(domain.LOGIN_EMAIL_EMPTY)
 	}
 
-	// emailRegex := `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
-	// if matched, _ := regexp.MatchString(emailRegex, cmd.Email); !matched {
-	// 	return nil, errors.NewBusinessError(domain.LOGIN_EMAIL_INVALID)
-	// }
+	emailRegex := `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
+	if matched, _ := regexp.MatchString(emailRegex, cmd.Email); !matched {
+		return nil, errors.NewBusinessError(domain.LOGIN_EMAIL_INVALID)
+	}
 
 	if cmd.Password == "" {
 		return nil, errors.NewBusinessError(domain.LOGIN_PASSWORD_EMPTY)

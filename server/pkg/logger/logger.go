@@ -1,11 +1,13 @@
 package logger
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"os"
-	"time"
+
+	"server/pkg/errors"
+	"server/pkg/util/ctxutil"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -14,10 +16,13 @@ import (
 // L is the global logger
 var L *zap.Logger
 
-// Init initializes zap with two cores:
-// - accessCore -> stdout (all requests, info+)
-// - auditCore -> file (audit events, info+), separate file for long retention
-func Init(prod bool) error {
+// file cores
+var (
+	accessCore, auditCore, businessCore, infraCore, securityCore zapcore.Core
+)
+
+// Init initializes zap logger with 5 separate files
+func Init() error {
 	encoderCfg := zapcore.EncoderConfig{
 		TimeKey:        "ts",
 		LevelKey:       "level",
@@ -34,30 +39,85 @@ func Init(prod bool) error {
 
 	jsonEncoder := zapcore.NewJSONEncoder(encoderCfg)
 
-	// stdout core for access + general logs
-	stdout := zapcore.Lock(os.Stdout)
-	accessCore := zapcore.NewCore(jsonEncoder, stdout, zap.InfoLevel)
-
-	// audit core (separate file)
-	auditFile, err := os.OpenFile("logs/audit.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o640)
+	// open files
+	var err error
+	accessCore, err = newFileCore("logs/access.log", jsonEncoder, zap.InfoLevel)
 	if err != nil {
 		return err
 	}
-	auditCore := zapcore.NewCore(jsonEncoder, zapcore.AddSync(auditFile), zap.InfoLevel)
+	auditCore, err = newFileCore("logs/audit.log", jsonEncoder, zap.InfoLevel)
+	if err != nil {
+		return err
+	}
+	businessCore, err = newFileCore("logs/business_error.log", jsonEncoder, zap.WarnLevel)
+	if err != nil {
+		return err
+	}
+	infraCore, err = newFileCore("logs/infra_error.log", jsonEncoder, zap.ErrorLevel)
+	if err != nil {
+		return err
+	}
+	securityCore, err = newFileCore("logs/security.log", jsonEncoder, zap.WarnLevel)
+	if err != nil {
+		return err
+	}
 
-	// combine cores with tee
-	core := zapcore.NewTee(accessCore, auditCore)
-
-	// add sampling to reduce high-frequency logs if desired
-	sampledCore := zapcore.NewSamplerWithOptions(core, time.Second, 100, 100) // tune params
-
-	logger := zap.New(sampledCore, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
-	L = logger
+	// combine cores
+	core := zapcore.NewTee(accessCore, auditCore, businessCore, infraCore, securityCore)
+	L = zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
 	zap.ReplaceGlobals(L)
 	return nil
 }
 
-// helper: hash token prefix to safely log
+// helper to create file core
+func newFileCore(path string, enc zapcore.Encoder, lvl zapcore.LevelEnabler) (zapcore.Core, error) {
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o640)
+	if err != nil {
+		return nil, err
+	}
+	return zapcore.NewCore(enc, zapcore.AddSync(f), lvl), nil
+}
+
+// -------------------- Helpers --------------------
+
+func buildFields(ctx context.Context, extra map[string]interface{}) []zap.Field {
+	fields := []zap.Field{
+		zap.String("trace_id", ctxutil.GetIDFromContext(ctx)),
+		zap.String("request_id", ctxutil.RequestIdFromContext(ctx)),
+	}
+	if sid := ctxutil.SessionIDFromContext(ctx); sid != "" {
+		fields = append(fields, zap.String("session_id", sid))
+	}
+	if uid := ctxutil.UserIDFromContext(ctx); uid != "" {
+		fields = append(fields, zap.String("user_id", uid))
+	}
+	fields = append(fields,
+		zap.String("instance", instance()),
+		zap.String("env", env()),
+	)
+	for k, v := range extra {
+		fields = append(fields, zap.Any(k, v))
+	}
+	return fields
+}
+
+func instance() string {
+	if h := os.Getenv("INSTANCE"); h != "" {
+		return h
+	}
+	if hn, err := os.Hostname(); err == nil {
+		return hn
+	}
+	return "unknown"
+}
+
+func env() string {
+	if e := os.Getenv("ENV"); e != "" {
+		return e
+	}
+	return "unknown"
+}
+
 func TokenHashPrefix(token string) string {
 	if token == "" {
 		return ""
@@ -66,12 +126,7 @@ func TokenHashPrefix(token string) string {
 	return hex.EncodeToString(sum[:])[:8]
 }
 
-// helper: mask email
 func MaskEmail(email string) string {
-	// very simple mask: keep first char and domain
-	var out map[string]string
-	_ = json.Unmarshal([]byte("{}"), &out) // placeholder to keep function consistent
-	// naive implementation:
 	for i := 0; i < len(email); i++ {
 		if email[i] == '@' {
 			if i > 1 {
@@ -81,4 +136,104 @@ func MaskEmail(email string) string {
 		}
 	}
 	return "***"
+}
+
+// -------------------- Logging APIs --------------------
+
+type AccessParams struct {
+	Service   string
+	Handler   string
+	Method    string
+	HTTPCode  int
+	Status    string
+	LatencyMS int64
+	IP        string
+	UserAgent string
+	Extra     map[string]interface{}
+}
+
+func LogAccess(ctx context.Context, p AccessParams) {
+	fields := []zap.Field{
+		zap.String("service", p.Service),
+		zap.String("handler", p.Handler),
+		zap.String("method", p.Method),
+		zap.String("status", p.Status),
+		zap.Int64("latency_ms", p.LatencyMS),
+		zap.Int("http_status", p.HTTPCode),
+		zap.String("ip", p.IP),
+		zap.String("user_agent", p.UserAgent),
+		zap.String("event.type", "access"),
+		zap.String("event.action", "request_handled"),
+	}
+	fields = append(fields, buildFields(ctx, p.Extra)...)
+	L.With(fields...).Info("access log")
+}
+
+type AuditParams struct {
+	Service string
+	Action  string
+	Msg     string
+	Extra   map[string]interface{}
+}
+
+func LogAudit(ctx context.Context, p AuditParams) {
+	fields := []zap.Field{
+		zap.String("service", p.Service),
+		zap.String("event.type", "audit"),
+		zap.String("event.action", p.Action),
+	}
+	fields = append(fields, buildFields(ctx, p.Extra)...)
+	L.With(fields...).Info(p.Msg)
+}
+
+func LogSecurity(ctx context.Context, action, reason, msg string, extra map[string]interface{}) {
+	fields := []zap.Field{
+		zap.String("service", instance()),
+		zap.String("event.type", "security"),
+		zap.String("event.action", action),
+		zap.String("security.reason", reason),
+	}
+	fields = append(fields, buildFields(ctx, extra)...)
+	L.With(fields...).Warn(msg)
+}
+
+func LogBusinessError(ctx context.Context, err errors.BusinessError, extra map[string]interface{}) {
+	fields := []zap.Field{
+		zap.String("service", instance()),
+		zap.String("event.type", "business_error"),
+		zap.String("event.action", "business_failure"),
+		zap.String("error.code", err.Code),
+		zap.String("error.message", err.Message),
+		zap.String("error.severity", err.Severity),
+		zap.Bool("error.retryable", err.Retryable),
+	}
+	fields = append(fields, buildFields(ctx, extra)...)
+	L.With(fields...).Warn("business error")
+}
+
+func LogInfraError(ctx context.Context, err errors.BusinessError, stack string, extra map[string]interface{}) {
+	fields := []zap.Field{
+		zap.String("service", instance()),
+		zap.String("event.type", "infra_error"),
+		zap.String("event.action", "infra_failure"),
+		zap.String("error.code", err.Code),
+		zap.String("error.message", err.Message),
+		zap.String("error.severity", err.Severity),
+		zap.Bool("error.retryable", err.Retryable),
+		zap.String("error.stack", stack),
+	}
+	fields = append(fields, buildFields(ctx, extra)...)
+	L.With(fields...).Error("infrastructure error")
+}
+
+func LogError(ctx context.Context, action, errMsg, stack string, extra map[string]interface{}) {
+	fields := []zap.Field{
+		zap.String("service", instance()),
+		zap.String("event.type", "error"),
+		zap.String("event.action", action),
+		zap.String("error.message", errMsg),
+		zap.String("error.stack", stack),
+	}
+	fields = append(fields, buildFields(ctx, extra)...)
+	L.With(fields...).Error("error occurred")
 }

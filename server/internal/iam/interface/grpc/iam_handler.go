@@ -7,8 +7,8 @@ import (
 	iamv1 "server/api/iam/v1"
 
 	usecases "server/internal/iam/application/usecases/auth"
-	"server/internal/iam/domain"
 
+	"server/pkg/util/grpcutil"
 	reshelper "server/pkg/util/response_helper"
 )
 
@@ -33,8 +33,7 @@ func (h *IamHandler) Login(ctx context.Context, req *iamv1.LoginRequest) (*commo
 
 	result, err := h.loginUsecase.Execute(ctx, cmd)
 	if err != nil {
-		businessError, _ := domain.GetBusinessError(err)
-		return reshelper.BuildErrorResponse(ctx, businessError), nil
+		return grpcutil.HandleBusinessError(ctx, "Login", req, err), nil
 	}
 
 	resDTO := usecases.MapLoginResultToResponseDTO(result)
@@ -47,8 +46,7 @@ func (h *IamHandler) Handshake(ctx context.Context, req *iamv1.HandshakeRequest)
 
 	result, err := h.handshakeUsecase.Execute(ctx, cmd)
 	if err != nil {
-		businessError, _ := domain.GetBusinessError(err)
-		return reshelper.BuildErrorResponse(ctx, businessError), nil
+		return grpcutil.HandleBusinessError(ctx, "Handshake", req, err), nil
 	}
 
 	resDTO := usecases.MapHandshakeResultToResponseDTO(result)
