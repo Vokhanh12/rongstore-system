@@ -210,13 +210,13 @@ services:
           server_action: "Log debug; track invalid requests"
 
 defaults:
-  unknown_domain_key:
+  UNKNOWN_DOMAIN_KEY:
     code: AUTH-VAL-999
     http_status: 400
     grpc_code: InvalidArgument
     message: "Unknown domain error"
 
-  internal_fallback:
+  INTERNAL_FALLBACK:
     code: CORE-INF-000
     http_status: 500
     grpc_code: Internal

@@ -1,6 +1,9 @@
 package errors
 
-import "fmt"
+import (
+	"fmt"
+	//iam_errors "server/internal/iam/domain"
+)
 
 type BusinessError struct {
 	Code      string                 `json:"code"`

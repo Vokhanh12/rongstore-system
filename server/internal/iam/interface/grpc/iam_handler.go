@@ -2,16 +2,14 @@ package grpc
 
 import (
 	"context"
-	"time"
 
 	commonv1 "server/api/common/v1"
 	iamv1 "server/api/iam/v1"
 
 	usecases "server/internal/iam/application/usecases/auth"
+	"server/internal/iam/domain"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/anypb"
+	reshelper "server/pkg/util/response_helper"
 )
 
 type IamHandler struct {
@@ -31,30 +29,16 @@ func NewIamHandler(
 }
 
 func (h *IamHandler) Login(ctx context.Context, req *iamv1.LoginRequest) (*commonv1.BaseResponse, error) {
-
 	cmd := usecases.MapLoginRequestToCommand(req)
 
 	result, err := h.loginUsecase.Execute(ctx, cmd)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
+		businessError, _ := domain.GetBusinessError(err)
+		return reshelper.BuildErrorResponse(ctx, businessError), nil
 	}
 
 	resDTO := usecases.MapLoginResultToResponseDTO(result)
-	anyData, err := anypb.New(&resDTO)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to marshal response")
-	}
-
-	return &commonv1.BaseResponse{
-		Success: true,
-		Data:    anyData,
-		Metadata: &commonv1.Metadata{
-			TraceId:   "trace-id-example",
-			RequestId: "req-id-example",
-			Timestamp: time.Now().UTC().Format(time.RFC3339),
-		},
-	}, nil
-
+	return reshelper.BuildSuccessResponse(ctx, &resDTO)
 }
 
 func (h *IamHandler) Handshake(ctx context.Context, req *iamv1.HandshakeRequest) (*commonv1.BaseResponse, error) {
@@ -63,21 +47,10 @@ func (h *IamHandler) Handshake(ctx context.Context, req *iamv1.HandshakeRequest)
 
 	result, err := h.handshakeUsecase.Execute(ctx, cmd)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		businessError, _ := domain.GetBusinessError(err)
+		return reshelper.BuildErrorResponse(ctx, businessError), nil
 	}
 
 	resDTO := usecases.MapHandshakeResultToResponseDTO(result)
-	anyData, err := anypb.New(&resDTO)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to marshal response")
-	}
-	return &commonv1.BaseResponse{
-		Success: true,
-		Data:    anyData,
-		Metadata: &commonv1.Metadata{
-			TraceId:   "trace-id-example",
-			RequestId: "req-id-example",
-			Timestamp: time.Now().UTC().Format(time.RFC3339),
-		},
-	}, nil
+	return reshelper.BuildSuccessResponse(ctx, &resDTO)
 }

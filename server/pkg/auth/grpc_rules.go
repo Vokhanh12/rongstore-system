@@ -15,7 +15,7 @@ type GrpcRule struct {
 
 func DefaultGrpcRules() []GrpcRule {
 	return []GrpcRule{
-		{MethodPrefix: "/iam.v1.IAMService/Handshake", Required: []string{"session-id", "x-session-id"}},
+		{MethodPrefix: "/iam.v1.IAMService/Handshake", Required: []string{"session-id", "x-session-id", "x-request_id"}},
 		{MethodPrefix: "/iam.v1.IAMService/Login", Required: []string{"authorization"}},
 		//{MethodPrefix: "*", Required: []string{"authorization"}},
 	}

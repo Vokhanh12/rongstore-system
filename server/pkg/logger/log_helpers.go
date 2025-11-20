@@ -26,6 +26,7 @@ func LogAccess(ctx context.Context, p AccessParams) {
 		zap.String("handler", p.Handler),
 		zap.String("method", p.Method),
 		zap.String("trace_id", ctxutil.GetIDFromContext(ctx)),
+		zap.String("request_id", ctxutil.RequestIdFromContext(ctx)),
 		zap.String("status", p.Status),
 		zap.Int64("latency_ms", p.LatencyMS),
 		zap.Int("http_status", p.HTTPCode),
