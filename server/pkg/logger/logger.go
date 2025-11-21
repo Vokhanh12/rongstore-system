@@ -21,7 +21,23 @@ var (
 	accessCore, auditCore, businessCore, infraCore, securityCore zapcore.Core
 )
 
-// Init initializes zap logger with 5 separate files
+// -------------------- Severity → Zap Level mapping --------------------
+
+var severityToZapLevel = map[string]zapcore.Level{
+	"S1": zap.ErrorLevel, // Critical outage / security risk
+	"S2": zap.WarnLevel,  // Degraded experience / important failure
+	"S3": zap.InfoLevel,  // Minor / client input issue
+}
+
+func zapLevelFromSeverity(sev string) zapcore.Level {
+	if lvl, ok := severityToZapLevel[sev]; ok {
+		return lvl
+	}
+	return zap.InfoLevel // default
+}
+
+// -------------------- Init Logger --------------------
+
 func Init() error {
 	encoderCfg := zapcore.EncoderConfig{
 		TimeKey:        "ts",
@@ -39,7 +55,6 @@ func Init() error {
 
 	jsonEncoder := zapcore.NewJSONEncoder(encoderCfg)
 
-	// open files
 	var err error
 	accessCore, err = newFileCore("logs/access.log", jsonEncoder, zap.InfoLevel)
 	if err != nil {
@@ -62,11 +77,11 @@ func Init() error {
 		return err
 	}
 
-	// combine cores
 	core := zapcore.NewTee(accessCore, auditCore, businessCore, infraCore, securityCore)
 	L = zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
 	zap.ReplaceGlobals(L)
 	return nil
+
 }
 
 // helper to create file core
@@ -236,4 +251,18 @@ func LogError(ctx context.Context, action, errMsg, stack string, extra map[strin
 	}
 	fields = append(fields, buildFields(ctx, extra)...)
 	L.With(fields...).Error("error occurred")
+}
+
+// -------------------- Log by Severity --------------------
+
+func LogBySeverity(ctx context.Context, err errors.BusinessError, extra map[string]interface{}) {
+	level := zapLevelFromSeverity(err.Severity)
+	switch level {
+	case zap.ErrorLevel:
+		LogInfraError(ctx, err, "", extra)
+	case zap.WarnLevel:
+		LogBusinessError(ctx, err, extra)
+	default:
+		LogAccess(ctx, AccessParams{Extra: extra})
+	}
 }

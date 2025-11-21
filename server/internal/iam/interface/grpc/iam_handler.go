@@ -41,7 +41,6 @@ func (h *IamHandler) Login(ctx context.Context, req *iamv1.LoginRequest) (*commo
 }
 
 func (h *IamHandler) Handshake(ctx context.Context, req *iamv1.HandshakeRequest) (*commonv1.BaseResponse, error) {
-
 	cmd := usecases.MapHandshakeRequestToCommand(req)
 
 	result, err := h.handshakeUsecase.Execute(ctx, cmd)

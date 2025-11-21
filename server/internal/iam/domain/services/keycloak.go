@@ -1,6 +1,9 @@
 package services
 
-import "context"
+import (
+	"context"
+	"server/pkg/errors"
+)
 
 type Token struct {
 	IdToken          string `json:"token_id"`
@@ -21,9 +24,9 @@ type Permission struct {
 }
 
 type Keycloak interface {
-	GetToken(ctx context.Context, username, password string) (*Token, error)
-	RefreshToken(ctx context.Context, refreshToken string) (*Token, error)
-	CheckHealth() error
+	GetToken(ctx context.Context, username, password string) (*Token, *errors.BusinessError)
+	RefreshToken(ctx context.Context, refreshToken string) (*Token, *errors.BusinessError)
+	CheckHealth() *errors.BusinessError
 	GetBaseURL() string
-	GetUserPermissions(ctx context.Context, accessToken string) ([]Permission, error)
+	GetUserPermissions(ctx context.Context, accessToken string) ([]Permission, *errors.BusinessError)
 }

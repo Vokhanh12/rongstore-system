@@ -60,3 +60,8 @@ func (e *BusinessError) WithExtra(data map[string]interface{}) *BusinessError {
 	}
 	return e
 }
+
+func Clone(be BusinessError) *BusinessError {
+	c := be
+	return &c
+}

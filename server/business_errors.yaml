@@ -16,7 +16,7 @@ services:
         grpc_retryable: ["Unavailable", "DeadlineExceeded"]
 
     errors:
-      VAL:     # 🔥 Thêm nhóm Validation
+      VAL:
         - code: AUTH-VAL-001
           key: LOGIN_EMAIL_EMPTY
           http_status: 400
@@ -132,7 +132,7 @@ services:
       TOKEN:
         - code: AUTH-TOKEN-001
           key: TOKEN_EXPIRED
-          http_status: 401
+          http_status: 401`   `
           grpc_code: Unauthenticated
           message: "Token expired"
           severity: S3
