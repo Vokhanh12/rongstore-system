@@ -28,5 +28,5 @@ type Keycloak interface {
 	RefreshToken(ctx context.Context, refreshToken string) (*Token, *errors.BusinessError)
 	CheckHealth() *errors.BusinessError
 	GetBaseURL() string
-	GetUserPermissions(ctx context.Context, accessToken string) ([]Permission, *errors.BusinessError)
+	//GetUserPermissions(ctx context.Context, accessToken string) ([]Permission, *errors.BusinessError)
 }

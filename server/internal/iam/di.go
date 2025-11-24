@@ -7,8 +7,8 @@ import (
 )
 
 type IamDeps struct {
-	Handler  *iagrpc.IamHandler
-	Store    services.SessionStore
-	Keycloak services.Keycloak
-	EventBus *eventbus.RabbitMQEventBus
+	Handler           *iagrpc.IamHandler
+	RedisSessionStore services.RedisSessionStore
+	Keycloak          services.Keycloak
+	EventBus          *eventbus.RabbitMQEventBus
 }

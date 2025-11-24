@@ -20,7 +20,8 @@ type SessionEntry struct {
 	ClientIP string
 }
 
-type SessionStore interface {
+type RedisSessionStore interface {
+	//	CheckHealth(r *RedisSessionStore) *errors.BusinessError
 	StoreSession(ctx context.Context, e *SessionEntry) error
 	GetSession(ctx context.Context, sessionID string) (*SessionEntry, error)
 	DeleteSession(ctx context.Context, sessionID string) error

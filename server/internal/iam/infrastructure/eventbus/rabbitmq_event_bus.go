@@ -15,7 +15,7 @@ type RabbitMQEventBus struct {
 	channel *amqp.Channel
 }
 
-func NewEventBusFromConfig(cfg *config.Config) (*RabbitMQEventBus, error) {
+func InitRabbitMQEventBus(cfg *config.Config) *RabbitMQEventBus {
 	url := fmt.Sprintf("amqp://%s:%s@%s:%s/",
 		cfg.RabbitMQUser,
 		cfg.RabbitMQPassword,
@@ -25,21 +25,21 @@ func NewEventBusFromConfig(cfg *config.Config) (*RabbitMQEventBus, error) {
 	return NewRabbitMQEventBus(url)
 }
 
-func NewRabbitMQEventBus(url string) (*RabbitMQEventBus, error) {
+func NewRabbitMQEventBus(url string) *RabbitMQEventBus {
 	conn, err := amqp.Dial(url)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to RabbitMQ: %w", err)
+		return nil
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
-		return nil, fmt.Errorf("failed to open channel: %w", err)
+		return nil
 	}
 
 	return &RabbitMQEventBus{
 		conn:    conn,
 		channel: ch,
-	}, nil
+	}
 }
 
 // Publish gửi message lên exchange hoặc queue.

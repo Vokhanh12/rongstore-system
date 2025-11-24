@@ -53,14 +53,14 @@ func MapHandshakeResultToResponseDTO(result *HandshakeResult) iamv1.HandshakeRes
 
 // --- Usecase ---
 type HandshakeUsecase struct {
-	UserRepo     rp.UserRepository
-	SessionStore sv.SessionStore
+	UserRepo          rp.UserRepository
+	RedisSessionStore sv.RedisSessionStore
 }
 
-func NewHandshakeUsecase(repo rp.UserRepository, store sv.SessionStore) *HandshakeUsecase {
+func NewHandshakeUsecase(repo rp.UserRepository, store sv.RedisSessionStore) *HandshakeUsecase {
 	return &HandshakeUsecase{
-		UserRepo:     repo,
-		SessionStore: store,
+		UserRepo:          repo,
+		RedisSessionStore: store,
 	}
 }
 
@@ -159,7 +159,7 @@ func (u *HandshakeUsecase) Execute(ctx context.Context, cmd HandshakeCommand) (*
 		HKDFSalt:  append([]byte(nil), hkdfSalt...),
 		Expiry:    expiry,
 	}
-	if err := u.SessionStore.StoreSession(ctx, entry); err != nil {
+	if err := u.RedisSessionStore.StoreSession(ctx, entry); err != nil {
 		crypto.ZeroBytes(okm)
 		crypto.ZeroBytes(kc2s)
 		crypto.ZeroBytes(ks2c)

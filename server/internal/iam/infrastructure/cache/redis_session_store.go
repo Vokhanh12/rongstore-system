@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -17,9 +18,49 @@ type RedisSessionStore struct {
 	ttl time.Duration
 }
 
-func NewRedisSessionStore(rdb *redis.Client, ttl time.Duration) sv.SessionStore {
-	return &RedisSessionStore{rdb: rdb, ttl: ttl}
+func InitRedisSessionStore(cfg *config.Config) sv.RedisSessionStore {
+	maxRetries := cfg.MaxRetries
+	interval := time.Duration(cfg.Interval) * time.Second
+
+	var rdb *redis.Client
+
+	for i := 0; i < maxRetries; i++ {
+		rdb = newRedisClient(cfg)
+
+		if rdb != nil && pingRedis(rdb) == nil {
+			return &RedisSessionStore{
+				rdb: rdb,
+				ttl: RedisTTLFromConfig(cfg),
+			}
+		}
+
+		time.Sleep(interval)
+	}
+
+	return nil
 }
+
+func newRedisClient(cfg *config.Config) *redis.Client {
+	addr := fmt.Sprintf("%s:%d", cfg.RedisHost, cfg.RedisPort)
+	return redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: cfg.RedisPassword,
+		DB:       cfg.RedisDB,
+	})
+}
+
+func pingRedis(rdb *redis.Client) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	return rdb.Ping(ctx).Err()
+}
+
+// func (r *RedisSessionStore) CheckHealth() *errors.BusinessError {
+// 	if err := pingRedis(r.rdb); err != nil {
+// 		return &domain_errors.REDIS_UNAVAILABLE
+// 	}
+// 	return nil
+// }
 
 func RedisTTLFromConfig(cfg *config.Config) time.Duration {
 	return time.Duration(cfg.RedisTTL) * time.Second

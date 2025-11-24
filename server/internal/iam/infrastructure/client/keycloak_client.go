@@ -25,148 +25,66 @@ type KeycloakClient struct {
 	Health  string
 }
 
-func (kc *KeycloakClient) GetUserPermissions(ctx context.Context, accessToken string) ([]sv.Permission, *errors.BusinessError) {
+// func (kc *KeycloakClient) GetUserPermissions(ctx context.Context, accessToken string) ([]sv.Permission, *errors.BusinessError) {
 
-	form := url.Values{}
-	form.Set("grant_type", kc.Config.KeycloakGrantUmaTicketType)
-	form.Set("audience", kc.Config.KeycloakAudience)
-	form.Set("response_mode", kc.Config.KeycloakResponsePermissionsMode)
+// 	form := url.Values{}
+// 	form.Set("grant_type", kc.Config.KeycloakGrantUmaTicketType)
+// 	form.Set("audience", kc.Config.KeycloakAudience)
+// 	form.Set("response_mode", kc.Config.KeycloakResponsePermissionsMode)
 
-	url := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token", kc.BaseURL, kc.Config.KeycloakRealm)
-	body := bytes.NewBufferString(form.Encode())
+// 	url := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token", kc.BaseURL, kc.Config.KeycloakRealm)
+// 	body := bytes.NewBufferString(form.Encode())
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
+// 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 
-	if err != nil {
-		return nil, err
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+// 	return nil, nil
+
+// }
+// =====================================================
+// INIT — giống hệt RedisSessionStore pattern
+// =====================================================
+func InitKeycloakClient(cfg *config.Config) sv.Keycloak {
+	maxRetries := cfg.MaxRetries
+	interval := time.Duration(cfg.Interval) * time.Second
+
+	kc := NewKeycloakClient(cfg)
+
+	for i := 0; i < maxRetries; i++ {
+		if err := kc.CheckHealth(); err == nil {
+			return kc
+		}
+		time.Sleep(interval)
 	}
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	return nil, nil
-
+	return nil
 }
 
-func (kc *KeycloakClient) GetToken(ctx context.Context, username, password string) (*sv.Token, *errors.BusinessError) {
-
-	form := url.Values{}
-	form.Set("grant_type", "password")
-	form.Set("client_id", kc.Config.KeycloakClientID)
-	form.Set("client_secret", kc.Config.KeycloakSecret)
-	form.Set("username", username)
-	form.Set("password", password)
-	form.Set("scope", kc.Config.KeycloakScope)
-
-	url := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token", kc.BaseURL, kc.Config.KeycloakRealm)
-	body := bytes.NewBufferString(form.Encode())
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
-
-	if err != nil {
-		return nil, errors.Clone(businessError.INTERNAL_FALLBACK)
+// =====================================================
+// CONSTRUCTOR
+// =====================================================
+func NewKeycloakClient(cfg *config.Config) sv.Keycloak {
+	return &KeycloakClient{
+		BaseURL: cfg.KeycloakURL,
+		Client:  &http.Client{Timeout: 5 * time.Second},
+		Config:  cfg,
+		Health:  cfg.KeycloakServerHealth,
 	}
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := kc.Client.Do(req)
-
-	if err != nil {
-		return nil, errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
-	}
-
-	defer resp.Body.Close()
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, errors.Clone(businessError.INTERNAL_FALLBACK)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		var kcErr struct {
-			Error            string `json:"error"`
-			ErrorDescription string `json:"error_description"`
-		}
-		if err := json.Unmarshal(respBody, &kcErr); err != nil {
-			return nil, errors.Clone(businessError.INTERNAL_FALLBACK)
-		}
-		switch kcErr.Error {
-		case "invalid_grant":
-			return nil, errors.Clone(businessError.INVALID_CREDENTIALS)
-		default:
-			return nil, errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
-		}
-	}
-
-	var token sv.Token
-	if err := json.Unmarshal(respBody, &token); err != nil {
-		return nil, errors.Clone(businessError.INTERNAL_FALLBACK)
-	}
-
-	if token.AccessToken == "" {
-		return nil, errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
-	}
-
-	return &token, nil
 }
 
-func (kc *KeycloakClient) RefreshToken(ctx context.Context, refreshToken string) (*sv.Token, *errors.BusinessError) {
-	form := url.Values{}
-	form.Set("grant_type", "refresh_token")
-	form.Set("client_id", kc.Config.KeycloakClientID)
-	form.Set("client_secret", kc.Config.KeycloakSecret)
-	form.Set("refresh_token", refreshToken)
-
-	url := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token", kc.BaseURL, kc.Config.KeycloakRealm)
-	body := bytes.NewBufferString(form.Encode())
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
-	if err != nil {
-		return nil, errors.Clone(businessError.INTERNAL_FALLBACK)
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := kc.Client.Do(req)
-	if err != nil {
-		return nil, errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
-	}
-
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, errors.Clone(businessError.INTERNAL_FALLBACK)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		var kcErr struct {
-			Error            string `json:"error"`
-			ErrorDescription string `json:"error_description"`
-		}
-		if err := json.Unmarshal(respBody, &kcErr); err != nil {
-			return nil, errors.Clone(businessError.INTERNAL_FALLBACK)
-		}
-		switch kcErr.Error {
-		case "invalid_grant":
-			return nil, errors.Clone(businessError.INVALID_CREDENTIALS)
-		default:
-			return nil, errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
-		}
-	}
-
-	var token sv.Token
-	if err := json.Unmarshal(respBody, &token); err != nil {
-		return nil, errors.Clone(businessError.INTERNAL_FALLBACK)
-	}
-
-	if token.AccessToken == "" {
-		return nil, errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
-	}
-
-	return &token, nil
+func (kc *KeycloakClient) GetBaseURL() string {
+	return kc.BaseURL
 }
 
-func (kc *KeycloakClient) CheckHealth(ctx context.Context) (be *errors.BusinessError) {
+// =====================================================
+// HEALTH CHECK
+// =====================================================
+func (kc *KeycloakClient) CheckHealth() *errors.BusinessError {
 	resp, err := kc.Client.Get(kc.Health)
-
 	if err != nil {
 		return errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
 	}
@@ -179,26 +97,132 @@ func (kc *KeycloakClient) CheckHealth(ctx context.Context) (be *errors.BusinessE
 
 	return nil
 }
-func (kc *KeycloakClient) GetBaseURL() string {
-	return kc.BaseURL
+
+// =====================================================
+// TOKEN REQUEST HELPERS
+// =====================================================
+func (kc *KeycloakClient) tokenEndpoint() string {
+	return fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token",
+		kc.BaseURL,
+		kc.Config.KeycloakRealm,
+	)
 }
 
-func NewKeycloakClient(cfg *config.Config) sv.Keycloak {
-	return &KeycloakClient{
-		BaseURL: cfg.KeycloakURL,
-		Client:  &http.Client{Timeout: 5 * time.Second},
-		Config:  cfg,
-		Health:  cfg.KeycloakServerHealth,
+func (kc *KeycloakClient) doFormRequest(
+	ctx context.Context,
+	form url.Values,
+) ([]byte, int, error) {
+
+	url := kc.tokenEndpoint()
+	body := bytes.NewBufferString(form.Encode())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
+	if err != nil {
+		return nil, 0, err
 	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := kc.Client.Do(req)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	defer resp.Body.Close()
+
+	respBody, readErr := io.ReadAll(resp.Body)
+	return respBody, resp.StatusCode, readErr
 }
 
-func InitKeycloakClient(cfg *config.Config, maxRetries int, interval time.Duration) (sv.Keycloak, error) {
-	kc := NewKeycloakClient(cfg)
-	for i := 0; i < maxRetries; i++ {
-		if err := kc.CheckHealth(); err == nil {
-			return kc, nil
-		}
-		time.Sleep(interval)
+// =====================================================
+// GET TOKEN
+// =====================================================
+func (kc *KeycloakClient) GetToken(
+	ctx context.Context,
+	username, password string,
+) (*sv.Token, *errors.BusinessError) {
+
+	form := url.Values{}
+	form.Set("grant_type", "password")
+	form.Set("client_id", kc.Config.KeycloakClientID)
+	form.Set("client_secret", kc.Config.KeycloakSecret)
+	form.Set("username", username)
+	form.Set("password", password)
+	form.Set("scope", kc.Config.KeycloakScope)
+
+	respBody, status, err := kc.doFormRequest(ctx, form)
+	if err != nil {
+		return nil, errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
 	}
-	return nil, fmt.Errorf("Keycloak not ready after %d retries", maxRetries)
+
+	if status != http.StatusOK {
+		return kc.mapKeycloakError(respBody)
+	}
+
+	var token sv.Token
+	if err := json.Unmarshal(respBody, &token); err != nil {
+		return nil, errors.Clone(businessError.INTERNAL_FALLBACK)
+	}
+
+	if token.AccessToken == "" {
+		return nil, errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
+	}
+
+	return &token, nil
+}
+
+// =====================================================
+// REFRESH TOKEN
+// =====================================================
+func (kc *KeycloakClient) RefreshToken(
+	ctx context.Context,
+	refreshToken string,
+) (*sv.Token, *errors.BusinessError) {
+
+	form := url.Values{}
+	form.Set("grant_type", "refresh_token")
+	form.Set("client_id", kc.Config.KeycloakClientID)
+	form.Set("client_secret", kc.Config.KeycloakSecret)
+	form.Set("refresh_token", refreshToken)
+
+	respBody, status, err := kc.doFormRequest(ctx, form)
+	if err != nil {
+		return nil, errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
+	}
+
+	if status != http.StatusOK {
+		return kc.mapKeycloakError(respBody)
+	}
+
+	var token sv.Token
+	if err := json.Unmarshal(respBody, &token); err != nil {
+		return nil, errors.Clone(businessError.INTERNAL_FALLBACK)
+	}
+
+	if token.AccessToken == "" {
+		return nil, errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
+	}
+
+	return &token, nil
+}
+
+// =====================================================
+// ERROR MAPPING
+// =====================================================
+func (kc *KeycloakClient) mapKeycloakError(respBody []byte) (*sv.Token, *errors.BusinessError) {
+	var kcErr struct {
+		Error            string `json:"error"`
+		ErrorDescription string `json:"error_description"`
+	}
+
+	if err := json.Unmarshal(respBody, &kcErr); err != nil {
+		return nil, errors.Clone(businessError.INTERNAL_FALLBACK)
+	}
+
+	switch kcErr.Error {
+	case "invalid_grant":
+		return nil, errors.Clone(businessError.INVALID_CREDENTIALS)
+	default:
+		return nil, errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
+	}
 }
