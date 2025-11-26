@@ -5,131 +5,185 @@ import "server/pkg/errors"
 
 var (
 	LOGIN_EMAIL_EMPTY = errors.BusinessError{
+		Key: "LOGIN_EMAIL_EMPTY",
 		Code: "AUTH-VAL-001",
 		Status: 400,
+		GRPCCode: "InvalidArgument",
 		Message: "Email is required",
 		Severity: "S3",
 		Retryable: false,
+		Cause: "Missing email in login request",
+		ClientAction: "Ask user to enter email",
+		ServerAction: "Log debug; no alert",
 	}
 
 	LOGIN_EMAIL_INVALID = errors.BusinessError{
+		Key: "LOGIN_EMAIL_INVALID",
 		Code: "AUTH-VAL-002",
 		Status: 400,
+		GRPCCode: "InvalidArgument",
 		Message: "Invalid email format",
 		Severity: "S3",
 		Retryable: false,
+		Cause: "Email does not match RFC regex",
+		ClientAction: "Validate email before submitting",
+		ServerAction: "Log debug for malformed input",
 	}
 
 	LOGIN_PASSWORD_EMPTY = errors.BusinessError{
+		Key: "LOGIN_PASSWORD_EMPTY",
 		Code: "AUTH-VAL-003",
 		Status: 400,
+		GRPCCode: "InvalidArgument",
 		Message: "Password is required",
 		Severity: "S3",
 		Retryable: false,
+		Cause: "Missing password in login request",
+		ClientAction: "Ask user to re-enter password",
+		ServerAction: "Log debug",
 	}
 
 	LOGIN_PAYLOAD_INVALID = errors.BusinessError{
+		Key: "LOGIN_PAYLOAD_INVALID",
 		Code: "AUTH-VAL-004",
 		Status: 400,
+		GRPCCode: "InvalidArgument",
 		Message: "Invalid request payload",
 		Severity: "S3",
 		Retryable: false,
+		Cause: "Malformed JSON or missing fields",
+		ClientAction: "Fix request body",
+		ServerAction: "Log warn for debug purposes",
 	}
 
 	HANDSHAKE_INVALID_CLIENT_KEY = errors.BusinessError{
+		Key: "HANDSHAKE_INVALID_CLIENT_KEY",
 		Code: "AUTH-HAND-001",
 		Status: 400,
+		GRPCCode: "InvalidArgument",
 		Message: "Invalid client public key",
 		Severity: "S3",
 		Retryable: false,
+		Cause: "Client sent malformed/unsupported public key",
+		ClientAction: "Validate/generate correct key and retry",
+		ServerAction: "Log warn with trace_id; no alert",
 	}
 
 	HANDSHAKE_KEY_AGREEMENT_FAIL = errors.BusinessError{
+		Key: "HANDSHAKE_KEY_AGREEMENT_FAIL",
 		Code: "AUTH-HAND-002",
 		Status: 422,
+		GRPCCode: "FailedPrecondition",
 		Message: "Key agreement failed",
 		Severity: "S3",
 		Retryable: false,
+		Cause: "ECDH derive failed due to incompatible/invalid key",
+		ClientAction: "Regenerate keypair on supported curve",
+		ServerAction: "Log warn; verify accepted curves list",
 	}
 
 	HANDSHAKE_RNG_FAIL = errors.BusinessError{
+		Key: "HANDSHAKE_RNG_FAIL",
 		Code: "AUTH-HAND-003",
 		Status: 500,
+		GRPCCode: "Internal",
 		Message: "Random generation failed",
 		Severity: "S1",
 		Retryable: true,
+		Cause: "System RNG failure",
+		ClientAction: "Retry handshake",
+		ServerAction: "Alert; investigate RNG availability",
 	}
 
 	HANDSHAKE_KEY_DERIVE_FAIL = errors.BusinessError{
+		Key: "HANDSHAKE_KEY_DERIVE_FAIL",
 		Code: "AUTH-HAND-004",
 		Status: 500,
+		GRPCCode: "Internal",
 		Message: "Key derivation failed",
 		Severity: "S1",
 		Retryable: true,
+		Cause: "HKDF derivation failed",
+		ClientAction: "Retry handshake",
+		ServerAction: "Alert; investigate HKDF process",
 	}
 
 	HANDSHAKE_STORAGE_FAIL = errors.BusinessError{
+		Key: "HANDSHAKE_STORAGE_FAIL",
 		Code: "AUTH-HAND-005",
 		Status: 500,
+		GRPCCode: "Internal",
 		Message: "Failed to store session",
 		Severity: "S1",
 		Retryable: true,
+		Cause: "Redis/DB failure during session storage",
+		ClientAction: "Retry handshake",
+		ServerAction: "Alert; check session store health",
 	}
 
 	INVALID_CREDENTIALS = errors.BusinessError{
+		Key: "INVALID_CREDENTIALS",
 		Code: "AUTH-LOGIN-001",
 		Status: 401,
+		GRPCCode: "Unauthenticated",
 		Message: "Invalid email or password",
 		Severity: "S3",
 		Retryable: false,
+		Cause: "Wrong credentials",
+		ClientAction: "Prompt user to re-enter credentials",
+		ServerAction: "Log info; consider login attempt metrics",
 	}
 
 	TOKEN_EXPIRED = errors.BusinessError{
+		Key: "TOKEN_EXPIRED",
 		Code: "AUTH-TOKEN-001",
 		Status: 401,
+		GRPCCode: "Unauthenticated",
 		Message: "Token expired",
 		Severity: "S3",
 		Retryable: false,
+		Cause: "Access token beyond exp",
+		ClientAction: "Use refresh token or re-login",
+		ServerAction: "Log info; track token expiry patterns",
 	}
 
 	DB_TIMEOUT = errors.BusinessError{
+		Key: "DB_TIMEOUT",
 		Code: "AUTH-INFRA-001",
 		Status: 503,
+		GRPCCode: "Unavailable",
 		Message: "Database service temporarily unavailable",
 		Severity: "S1",
 		Retryable: true,
+		Cause: "Database timeout or overload",
+		ClientAction: "Retry with exponential backoff",
+		ServerAction: "Alert; check DB health/capacity",
 	}
 
 	REDIS_UNAVAILABLE = errors.BusinessError{
+		Key: "REDIS_UNAVAILABLE",
 		Code: "AUTH-INFRA-002",
 		Status: 503,
+		GRPCCode: "Unavailable",
 		Message: "Redis cache temporarily unavailable",
 		Severity: "S1",
 		Retryable: true,
+		Cause: "Redis connection failed or timeout",
+		ClientAction: "Retry operation after delay",
+		ServerAction: "Alert; check Redis cluster health",
 	}
 
 	KEYCLOAK_UNAVAILABLE = errors.BusinessError{
+		Key: "KEYCLOAK_UNAVAILABLE",
 		Code: "AUTH-INFRA-003",
 		Status: 503,
+		GRPCCode: "Unavailable",
 		Message: "Keycloak service temporarily unavailable",
 		Severity: "S1",
 		Retryable: true,
-	}
-
-	UNKNOWN_DOMAIN_KEY = errors.BusinessError{
-		Code: "AUTH-VAL-999",
-		Status: 400,
-		Message: "Unknown domain error",
-		Severity: "S1",
-		Retryable: false,
-	}
-
-	INTERNAL_FALLBACK = errors.BusinessError{
-		Code: "CORE-INF-000",
-		Status: 500,
-		Message: "Internal server error",
-		Severity: "S1",
-		Retryable: false,
+		Cause: "Keycloak server unreachable or timeout",
+		ClientAction: "Retry authentication/authorization",
+		ServerAction: "Alert; verify Keycloak server status",
 	}
 
 )
@@ -150,21 +204,4 @@ var ErrorByCode = map[string]errors.BusinessError{
 	"AUTH-INFRA-001": DB_TIMEOUT,
 	"AUTH-INFRA-002": REDIS_UNAVAILABLE,
 	"AUTH-INFRA-003": KEYCLOAK_UNAVAILABLE,
-	"AUTH-VAL-999": UNKNOWN_DOMAIN_KEY,
-	"CORE-INF-000": INTERNAL_FALLBACK,
 }
-
-// GetErrorByCode returns an error by code
-func GetErrorByCode(code string) (errors.BusinessError, bool) {
-    err, ok := ErrorByCode[code]
-    return err, ok
-}
-
-// GetBusinessError converts an error to BusinessError if possible
-func GetBusinessError(err error) (*errors.BusinessError, bool) {
-    if be, ok := err.(*errors.BusinessError); ok {
-        return be, true
-    }
-    return &UNKNOWN_DOMAIN_KEY, false
-}
-

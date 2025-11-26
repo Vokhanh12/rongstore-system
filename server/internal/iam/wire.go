@@ -4,6 +4,7 @@
 package wire
 
 import (
+	"context"
 	"server/internal/iam/application/usecases/auth"
 	"server/internal/iam/infrastructure/cache"
 	"server/internal/iam/infrastructure/client"
@@ -16,7 +17,7 @@ import (
 	"github.com/google/wire"
 )
 
-func InitializeIamHandler() (IamDeps, error) {
+func InitializeIamHandler(ctx context.Context) (IamDeps, error) {
 	wire.Build(
 		config.Load,
 		cache.InitRedisSessionStore,

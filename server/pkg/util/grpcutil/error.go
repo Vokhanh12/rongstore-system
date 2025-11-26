@@ -10,7 +10,7 @@ import (
 )
 
 func HandleBusinessError(ctx context.Context, handlerName string, req any, err error) *commonv1.BaseResponse {
-	businessError, _ := domain.GetBusinessError(err)
+	businessError := domain.GetBusinessError(err)
 	logger.LogBySeverity(ctx, *businessError, map[string]interface{}{
 		"handler": handlerName,
 		"request": req,

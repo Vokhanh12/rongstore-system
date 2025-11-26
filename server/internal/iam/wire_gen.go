@@ -7,6 +7,7 @@
 package wire
 
 import (
+	"context"
 	"server/internal/iam/application/usecases/auth"
 	"server/internal/iam/infrastructure/cache"
 	"server/internal/iam/infrastructure/client"
@@ -19,14 +20,14 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeIamHandler() (IamDeps, error) {
+func InitializeIamHandler(ctx context.Context) (IamDeps, error) {
 	configConfig := config.Load()
 	gormDB, err := db.InitGormPostgresDB(configConfig)
 	if err != nil {
 		return IamDeps{}, err
 	}
 	userRepository := repositories.NewGormUserRepository(gormDB)
-	keycloak := client.InitKeycloakClient(configConfig)
+	keycloak := client.InitKeycloakClient(ctx, configConfig)
 	loginUsecase := auth.NewLoginUsecase(userRepository, keycloak)
 	redisSessionStore := cache.InitRedisSessionStore(configConfig)
 	handshakeUsecase := auth.NewHandshakeUsecase(userRepository, redisSessionStore)

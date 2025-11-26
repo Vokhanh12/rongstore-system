@@ -14,6 +14,7 @@ import (
 	sv "server/internal/iam/domain/services"
 	"server/pkg/config"
 	"server/pkg/errors"
+	"server/pkg/logger"
 )
 
 var _ sv.Keycloak = (*KeycloakClient)(nil)
@@ -49,7 +50,7 @@ type KeycloakClient struct {
 // =====================================================
 // INIT — giống hệt RedisSessionStore pattern
 // =====================================================
-func InitKeycloakClient(cfg *config.Config) sv.Keycloak {
+func InitKeycloakClient(ctx context.Context, cfg *config.Config) sv.Keycloak {
 	maxRetries := cfg.MaxRetries
 	interval := time.Duration(cfg.Interval) * time.Second
 
@@ -58,10 +59,30 @@ func InitKeycloakClient(cfg *config.Config) sv.Keycloak {
 	for i := 0; i < maxRetries; i++ {
 		if err := kc.CheckHealth(); err == nil {
 			return kc
+		} else {
+			be := businessError.GetBusinessError(err)
+			fields := map[string]interface{}{
+				"retry":     i + 1,
+				"operation": "init.keycloak.client",
+				"error":     err.Error(),
+			}
+
+			logger.LogBySeverity(ctx, *be, fields)
 		}
+
 		time.Sleep(interval)
 	}
-	return nil
+
+	be := businessError.KEYCLOAK_UNAVAILABLE
+	panic(fmt.Sprintf(
+		"PANIC: [%s][%s] %s | cause: %s | server_action: %s | retryable: %v",
+		be.Code,
+		be.Key,
+		be.Message,
+		be.Cause,
+		be.ServerAction,
+		be.Retryable,
+	))
 }
 
 // =====================================================

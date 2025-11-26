@@ -5,18 +5,14 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
 	iampb "server/api/iam/v1"
 	wire "server/internal/iam"
 	domain_errors "server/internal/iam/domain"
-	"server/internal/iam/infrastructure/client"
-	"server/internal/iam/infrastructure/eventbus"
 	"server/pkg/auth"
 	"server/pkg/config"
 	"server/pkg/logger"
@@ -29,43 +25,20 @@ func main() {
 	if err := logger.Init(); err != nil {
 		log.Fatalf("failed to init logger: %v", err)
 	}
-	zlog := logger.L
-	defer zlog.Sync()
 
 	ctx := context.Background()
 
-	// --- 1️⃣ Load config ---
 	cfg := config.Load()
-	logger.LogAudit(ctx, logger.AuditParams{
-		Service: "iam_service",
-		Action:  "config_loaded",
-		Msg:     "Configuration loaded successfully",
-		Extra:   map[string]interface{}{"keycloak_url": cfg.KeycloakURL},
-	})
 
-	// --- 2️⃣ Start Prometheus metrics server ---
 	metrics.Register()
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		logger.LogAudit(ctx, logger.AuditParams{
-			Service: "iam_service",
-			Action:  "metrics_server_start",
-			Msg:     "Prometheus metrics endpoint started",
-			Extra:   map[string]interface{}{"addr": ":9090"},
-		})
 		if err := http.ListenAndServe(":9090", nil); err != nil {
-			be, ok := domain_errors.GetBusinessError(err)
-			if ok && be != nil {
-				logger.LogInfraError(ctx, *be, "", nil)
-			} else {
-				logger.LogInfraError(ctx, domain_errors.UNKNOWN_DOMAIN_KEY, "", nil)
-			}
+			be := domain_errors.GetBusinessError(err)
+			logger.LogInfraError(ctx, *be, "", nil)
 		}
 	}()
 
-	// --- 3️⃣ Check Keycloak readiness ---
-	maxRetries := 10
-	interval := 3 * time.Second
 	logger.LogAccess(ctx, logger.AccessParams{
 		Service:  "iam_service",
 		Handler:  "KeycloakCheck",
@@ -74,100 +47,34 @@ func main() {
 		Extra:    map[string]interface{}{"url": cfg.KeycloakURL},
 		HTTPCode: 0,
 	})
-	kcClient, err := client.InitKeycloakClient(cfg, maxRetries, interval)
-	if err != nil {
-		be, ok := domain_errors.GetBusinessError(err)
-		if ok && be != nil {
-			logger.LogInfraError(ctx, *be, "", nil)
-		} else {
-			logger.LogInfraError(ctx, domain_errors.UNKNOWN_DOMAIN_KEY, "", nil)
-		}
-		zlog.Fatal("Keycloak is not ready", zap.Error(err))
-	}
-	logger.LogAudit(ctx, logger.AuditParams{
-		Service: "iam_service",
-		Action:  "keycloak_ready",
-		Msg:     "Keycloak client ready",
-		Extra:   map[string]interface{}{"base_url": kcClient.GetBaseURL()},
-	})
 
-	// --- 4️⃣ Init RabbitMQ EventBus ---
-	eventBus, err := eventbus.NewEventBusFromConfig(cfg)
+	deps, err := wire.InitializeIamHandler(ctx)
 	if err != nil {
-		be, ok := domain_errors.GetBusinessError(err)
-		if ok && be != nil {
-			logger.LogInfraError(ctx, *be, "", nil)
-		} else {
-			logger.LogInfraError(ctx, domain_errors.UNKNOWN_DOMAIN_KEY, "", nil)
-		}
-		zlog.Fatal("failed to connect RabbitMQ", zap.Error(err))
+		be := domain_errors.GetBusinessError(err)
+		logger.LogInfraError(ctx, *be, "", nil)
 	}
-	defer func() {
-		_ = eventBus.Close()
-		logger.LogAudit(ctx, logger.AuditParams{
-			Service: "iam_service",
-			Action:  "rabbitmq_closed",
-			Msg:     "RabbitMQ connection closed",
-		})
-	}()
-	logger.LogAudit(ctx, logger.AuditParams{
-		Service: "iam_service",
-		Action:  "rabbitmq_connected",
-		Msg:     "RabbitMQ connected successfully",
-	})
 
-	// --- 5️⃣ Init IAM dependencies ---
-	deps, err := wire.InitializeIamHandler()
-	if err != nil {
-		be, ok := domain_errors.GetBusinessError(err)
-		if ok && be != nil {
-			logger.LogInfraError(ctx, *be, "", nil)
-		} else {
-			logger.LogInfraError(ctx, domain_errors.UNKNOWN_DOMAIN_KEY, "", nil)
-		}
-		zlog.Fatal("failed to initialize IAM deps", zap.Error(err))
-	}
-	deps.Keycloak = kcClient
-	// deps.EventBus = eventBus // nếu cần
-
-	// --- 6️⃣ Start gRPC server ---
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
-		be, ok := domain_errors.GetBusinessError(err)
-		if ok && be != nil {
-			logger.LogInfraError(ctx, *be, "", nil)
-		} else {
-			logger.LogInfraError(ctx, domain_errors.UNKNOWN_DOMAIN_KEY, "", nil)
-		}
-		zlog.Fatal("failed to listen", zap.Error(err))
+		be := domain_errors.GetBusinessError(err)
+		logger.LogInfraError(ctx, *be, "", nil)
 	}
 
 	grpcServer := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			obs_grpc.TraceUnaryInterceptor(),
-			obs_grpc.AuthUnaryInterceptor(deps.Store, auth.DefaultGrpcRules()),
+			obs_grpc.AuthUnaryInterceptor(deps.RedisSessionStore, auth.DefaultGrpcRules()),
 			obs_grpc.MetricsUnaryInterceptor("iam_service"),
 			obs_grpc.LoggingUnaryInterceptor("iam_service"),
 		),
 	)
+
 	reflection.Register(grpcServer)
 	iampb.RegisterIamServiceServer(grpcServer, deps.Handler)
 
-	logger.LogAudit(ctx, logger.AuditParams{
-		Service: "iam_service",
-		Action:  "grpc_server_started",
-		Msg:     "gRPC server started successfully",
-		Extra:   map[string]interface{}{"addr": ":50051"},
-	})
-
 	if err := grpcServer.Serve(lis); err != nil {
-		be, ok := domain_errors.GetBusinessError(err)
-		if ok && be != nil {
-			logger.LogInfraError(ctx, *be, "", nil)
-		} else {
-			logger.LogInfraError(ctx, domain_errors.UNKNOWN_DOMAIN_KEY, "", nil)
-		}
-		zlog.Fatal("failed to serve gRPC", zap.Error(err))
+		be := domain_errors.GetBusinessError(err)
+		logger.LogInfraError(ctx, *be, "", nil)
 	}
 }
 

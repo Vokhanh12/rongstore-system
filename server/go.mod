@@ -26,6 +26,7 @@ require (
 	github.com/prometheus/procfs v0.16.1 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (

@@ -13,16 +13,16 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// L is the global logger
-var L *zap.Logger
-
-// file cores
+// -------------------- Loggers --------------------
 var (
-	accessCore, auditCore, businessCore, infraCore, securityCore zapcore.Core
+	AccessLogger   *zap.Logger
+	AuditLogger    *zap.Logger
+	BusinessLogger *zap.Logger
+	InfraLogger    *zap.Logger
+	SecurityLogger *zap.Logger
 )
 
 // -------------------- Severity → Zap Level mapping --------------------
-
 var severityToZapLevel = map[string]zapcore.Level{
 	"S1": zap.ErrorLevel, // Critical outage / security risk
 	"S2": zap.WarnLevel,  // Degraded experience / important failure
@@ -33,11 +33,10 @@ func zapLevelFromSeverity(sev string) zapcore.Level {
 	if lvl, ok := severityToZapLevel[sev]; ok {
 		return lvl
 	}
-	return zap.InfoLevel // default
+	return zap.InfoLevel
 }
 
 // -------------------- Init Logger --------------------
-
 func Init() error {
 	encoderCfg := zapcore.EncoderConfig{
 		TimeKey:        "ts",
@@ -52,49 +51,44 @@ func Init() error {
 		EncodeDuration: zapcore.SecondsDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
-
 	jsonEncoder := zapcore.NewJSONEncoder(encoderCfg)
 
 	var err error
-	accessCore, err = newFileCore("logs/access.log", jsonEncoder, zap.InfoLevel)
+	AccessLogger, err = newFileLogger("logs/access.log", jsonEncoder, zap.InfoLevel)
 	if err != nil {
 		return err
 	}
-	auditCore, err = newFileCore("logs/audit.log", jsonEncoder, zap.InfoLevel)
+	AuditLogger, err = newFileLogger("logs/audit.log", jsonEncoder, zap.InfoLevel)
 	if err != nil {
 		return err
 	}
-	businessCore, err = newFileCore("logs/business_error.log", jsonEncoder, zap.WarnLevel)
+	BusinessLogger, err = newFileLogger("logs/business_error.log", jsonEncoder, zap.WarnLevel)
 	if err != nil {
 		return err
 	}
-	infraCore, err = newFileCore("logs/infra_error.log", jsonEncoder, zap.ErrorLevel)
+	InfraLogger, err = newFileLogger("logs/infra_error.log", jsonEncoder, zap.ErrorLevel)
 	if err != nil {
 		return err
 	}
-	securityCore, err = newFileCore("logs/security.log", jsonEncoder, zap.WarnLevel)
+	SecurityLogger, err = newFileLogger("logs/security.log", jsonEncoder, zap.WarnLevel)
 	if err != nil {
 		return err
 	}
-
-	core := zapcore.NewTee(accessCore, auditCore, businessCore, infraCore, securityCore)
-	L = zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
-	zap.ReplaceGlobals(L)
 	return nil
 
 }
 
-// helper to create file core
-func newFileCore(path string, enc zapcore.Encoder, lvl zapcore.LevelEnabler) (zapcore.Core, error) {
+// helper to create single file logger
+func newFileLogger(path string, enc zapcore.Encoder, lvl zapcore.LevelEnabler) (*zap.Logger, error) {
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o640)
 	if err != nil {
 		return nil, err
 	}
-	return zapcore.NewCore(enc, zapcore.AddSync(f), lvl), nil
+	core := zapcore.NewCore(enc, zapcore.AddSync(f), lvl)
+	return zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel)), nil
 }
 
 // -------------------- Helpers --------------------
-
 func buildFields(ctx context.Context, extra map[string]interface{}) []zap.Field {
 	fields := []zap.Field{
 		zap.String("trace_id", ctxutil.GetIDFromContext(ctx)),
@@ -154,7 +148,6 @@ func MaskEmail(email string) string {
 }
 
 // -------------------- Logging APIs --------------------
-
 type AccessParams struct {
 	Service   string
 	Handler   string
@@ -181,7 +174,7 @@ func LogAccess(ctx context.Context, p AccessParams) {
 		zap.String("event.action", "request_handled"),
 	}
 	fields = append(fields, buildFields(ctx, p.Extra)...)
-	L.With(fields...).Info("access log")
+	AccessLogger.With(fields...).Info("access log")
 }
 
 type AuditParams struct {
@@ -198,7 +191,7 @@ func LogAudit(ctx context.Context, p AuditParams) {
 		zap.String("event.action", p.Action),
 	}
 	fields = append(fields, buildFields(ctx, p.Extra)...)
-	L.With(fields...).Info(p.Msg)
+	AuditLogger.With(fields...).Info(p.Msg)
 }
 
 func LogSecurity(ctx context.Context, action, reason, msg string, extra map[string]interface{}) {
@@ -209,7 +202,7 @@ func LogSecurity(ctx context.Context, action, reason, msg string, extra map[stri
 		zap.String("security.reason", reason),
 	}
 	fields = append(fields, buildFields(ctx, extra)...)
-	L.With(fields...).Warn(msg)
+	SecurityLogger.With(fields...).Warn(msg)
 }
 
 func LogBusinessError(ctx context.Context, err errors.BusinessError, extra map[string]interface{}) {
@@ -223,7 +216,7 @@ func LogBusinessError(ctx context.Context, err errors.BusinessError, extra map[s
 		zap.Bool("error.retryable", err.Retryable),
 	}
 	fields = append(fields, buildFields(ctx, extra)...)
-	L.With(fields...).Warn("business error")
+	BusinessLogger.With(fields...).Warn("business error")
 }
 
 func LogInfraError(ctx context.Context, err errors.BusinessError, stack string, extra map[string]interface{}) {
@@ -238,7 +231,7 @@ func LogInfraError(ctx context.Context, err errors.BusinessError, stack string, 
 		zap.String("error.stack", stack),
 	}
 	fields = append(fields, buildFields(ctx, extra)...)
-	L.With(fields...).Error("infrastructure error")
+	InfraLogger.With(fields...).Error("infrastructure error")
 }
 
 func LogError(ctx context.Context, action, errMsg, stack string, extra map[string]interface{}) {
@@ -250,11 +243,10 @@ func LogError(ctx context.Context, action, errMsg, stack string, extra map[strin
 		zap.String("error.stack", stack),
 	}
 	fields = append(fields, buildFields(ctx, extra)...)
-	L.With(fields...).Error("error occurred")
+	InfraLogger.With(fields...).Error("error occurred") // dùng InfraLogger làm chung
 }
 
 // -------------------- Log by Severity --------------------
-
 func LogBySeverity(ctx context.Context, err errors.BusinessError, extra map[string]interface{}) {
 	level := zapLevelFromSeverity(err.Severity)
 	switch level {

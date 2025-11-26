@@ -2,16 +2,20 @@ package errors
 
 import (
 	"fmt"
-	//iam_errors "server/internal/iam/domain"
 )
 
 type BusinessError struct {
-	Code      string                 `json:"code"`
-	Status    int                    `json:"status"`
-	Message   string                 `json:"message"`
-	Data      map[string]interface{} `json:"data,omitempty"`
-	Severity  string                 `json:"severity,omitempty"`
-	Retryable bool                   `json:"retryable,omitempty"`
+	Code         string                 `json:"code"`
+	Status       int                    `json:"status"`
+	GRPCCode     string                 `json:"grpc_code"`
+	Key          string                 `json:"key"`
+	Cause        string                 `json:"cause"`
+	ClientAction string                 `json:"client_action"`
+	ServerAction string                 `json:"server_action"`
+	Message      string                 `json:"message"`
+	Data         map[string]interface{} `json:"data,omitempty"`
+	Severity     string                 `json:"severity,omitempty"`
+	Retryable    bool                   `json:"retryable,omitempty"`
 }
 
 func (e *BusinessError) Error() string {
@@ -64,4 +68,18 @@ func (e *BusinessError) WithExtra(data map[string]interface{}) *BusinessError {
 func Clone(be BusinessError) *BusinessError {
 	c := be
 	return &c
+}
+
+func GetErrorByCode(arrErrs map[string]BusinessError, code string) *BusinessError {
+	if err, ok := arrErrs[code]; ok {
+		return &err
+	}
+	return Clone(UNKNOWN_DOMAIN_KEY)
+}
+
+func GetBusinessError(arrErrs map[string]BusinessError, err error) *BusinessError {
+	if be, ok := err.(*BusinessError); ok {
+		return be
+	}
+	return Clone(UNKNOWN_DOMAIN_KEY)
 }

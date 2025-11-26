@@ -1,17 +1,11 @@
 package config
 
 import (
-	"context"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/redis/go-redis/v9"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 type Config struct {
@@ -55,6 +49,9 @@ type Config struct {
 	RabbitMQPort     string
 	RabbitMQUser     string
 	RabbitMQPassword string
+
+	MaxRetries int
+	Interval   int
 }
 
 func Load() *Config {
@@ -76,9 +73,20 @@ func Load() *Config {
 	if err != nil {
 		log.Fatalf("Invalid REDIS_DB: %v", err)
 	}
-	redisTTL, err := strconv.Atoi(getEnv("REDIS_TTL", "900")) // mặc định 15 phút
+
+	redisTTL, err := strconv.Atoi(getEnv("REDIS_TTL", "900"))
 	if err != nil {
 		log.Fatalf("Invalid REDIS_TTL: %v", err)
+	}
+
+	maxRetries, err := strconv.Atoi(getEnv("MAX_RETRIES", "3"))
+	if err != nil {
+		log.Fatalf("Invalid MAX_RETRIES: %v", err)
+	}
+
+	interval, err := strconv.Atoi(getEnv("INTERVAL", "1"))
+	if err != nil {
+		log.Fatalf("Invalid INTERVAL: %v", err)
 	}
 
 	return &Config{
@@ -109,39 +117,10 @@ func Load() *Config {
 		RabbitMQPort:     getEnv("RABBITMQ_PORT", ""),
 		RabbitMQUser:     getEnv("RABBITMQ_USER", ""),
 		RabbitMQPassword: getEnv("RABBITMQ_PASSWORD", ""),
+
+		MaxRetries: maxRetries,
+		Interval:   interval,
 	}
-}
-
-func NewGormDB(cfg *Config) (*gorm.DB, error) {
-	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
-		cfg.PostgresHost,
-		cfg.PostgresUser,
-		cfg.PostgresPassword,
-		cfg.PostgresDB,
-		cfg.PostgresPort,
-	)
-	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
-}
-
-// NewRedisClient khởi tạo Redis client từ cấu hình
-func NewRedisClient(cfg *Config) *redis.Client {
-	addr := fmt.Sprintf("%s:%d", cfg.RedisHost, cfg.RedisPort)
-
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: cfg.RedisPassword, // "" nếu không có password
-		DB:       cfg.RedisDB,       // 0 mặc định
-	})
-
-	// test kết nối
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	if err := rdb.Ping(ctx).Err(); err != nil {
-		log.Fatalf("failed to connect to Redis at %s: %v", addr, err)
-	}
-
-	return rdb
 }
 
 func getEnv(key, fallback string) string {

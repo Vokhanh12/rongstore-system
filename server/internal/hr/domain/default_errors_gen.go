@@ -5,43 +5,42 @@ import "server/pkg/errors"
 
 var (
 	EMPLOYEE_NOT_FOUND = errors.BusinessError{
+		Key: "EMPLOYEE_NOT_FOUND",
 		Code: "HR-EMP-001",
 		Status: 404,
+		GRPCCode: "NotFound",
 		Message: "Employee not found",
 		Severity: "S2",
 		Retryable: false,
+		Cause: "Invalid employee ID",
+		ClientAction: "Check employee ID",
+		ServerAction: "Log info; monitor invalid access attempts",
 	}
 
 	PAYROLL_PROCESS_FAIL = errors.BusinessError{
+		Key: "PAYROLL_PROCESS_FAIL",
 		Code: "HR-PAY-001",
 		Status: 500,
+		GRPCCode: "Internal",
 		Message: "Payroll processing failed",
 		Severity: "S1",
 		Retryable: true,
+		Cause: "DB or external service failure",
+		ClientAction: "Retry later",
+		ServerAction: "Alert finance ops; investigate DB/services",
 	}
 
 	LEAVE_REQUEST_INVALID = errors.BusinessError{
+		Key: "LEAVE_REQUEST_INVALID",
 		Code: "HR-LEAVE-001",
 		Status: 400,
+		GRPCCode: "InvalidArgument",
 		Message: "Invalid leave request",
 		Severity: "S3",
 		Retryable: false,
-	}
-
-	UNKNOWN_DOMAIN_KEY = errors.BusinessError{
-		Code: "AUTH-VAL-999",
-		Status: 400,
-		Message: "Unknown domain error",
-		Severity: "S1",
-		Retryable: false,
-	}
-
-	INTERNAL_FALLBACK = errors.BusinessError{
-		Code: "CORE-INF-000",
-		Status: 500,
-		Message: "Internal server error",
-		Severity: "S1",
-		Retryable: false,
+		Cause: "Invalid date or quota",
+		ClientAction: "Correct leave request",
+		ServerAction: "Log debug; track invalid requests",
 	}
 
 )
@@ -51,21 +50,4 @@ var ErrorByCode = map[string]errors.BusinessError{
 	"HR-EMP-001": EMPLOYEE_NOT_FOUND,
 	"HR-PAY-001": PAYROLL_PROCESS_FAIL,
 	"HR-LEAVE-001": LEAVE_REQUEST_INVALID,
-	"AUTH-VAL-999": UNKNOWN_DOMAIN_KEY,
-	"CORE-INF-000": INTERNAL_FALLBACK,
 }
-
-// GetErrorByCode returns an error by code
-func GetErrorByCode(code string) (errors.BusinessError, bool) {
-    err, ok := ErrorByCode[code]
-    return err, ok
-}
-
-// GetBusinessError converts an error to BusinessError if possible
-func GetBusinessError(err error) (*errors.BusinessError, bool) {
-    if be, ok := err.(*errors.BusinessError); ok {
-        return be, true
-    }
-    return &UNKNOWN_DOMAIN_KEY, false
-}
-
