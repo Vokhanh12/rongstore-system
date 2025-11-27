@@ -1,10 +1,13 @@
 package services
 
+import (
+	"server/pkg/errors"
+)
+
 type BusinessError interface {
-	WithMessage(msg string) func(*BusinessError)
-	WithData(data map[string]interface{})
-	GetErrorByCode(code string) *BusinessError
-	NewBusinessError(template BusinessError, opts ...func(*BusinessError)) *BusinessError
-	GetBusinessError(arrErrs map[string]BusinessError, err error) *BusinessError
-	Clone(be BusinessError) *BusinessError
+	WithMessage(msg string) func(*errors.BusinessError)
+	WithData(data map[string]interface{}) func(*errors.BusinessError)
+	GetErrorByCode(code string) *errors.BusinessError
+	NewBusinessError(template errors.BusinessError, opts ...func(*errors.BusinessError)) *errors.BusinessError
+	GetBusinessError(arrErrs map[string]errors.BusinessError, err error) *errors.BusinessError
 }

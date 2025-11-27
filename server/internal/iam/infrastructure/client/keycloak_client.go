@@ -20,10 +20,11 @@ import (
 var _ sv.Keycloak = (*KeycloakClient)(nil)
 
 type KeycloakClient struct {
-	BaseURL string
-	Client  *http.Client
-	Config  *config.Config
-	Health  string
+	BaseURL       string
+	Client        *http.Client
+	Config        *config.Config
+	Health        string
+	businessError sv.BusinessError
 }
 
 // func (kc *KeycloakClient) GetUserPermissions(ctx context.Context, accessToken string) ([]sv.Permission, *errors.BusinessError) {
@@ -50,17 +51,17 @@ type KeycloakClient struct {
 // =====================================================
 // INIT — giống hệt RedisSessionStore pattern
 // =====================================================
-func InitKeycloakClient(ctx context.Context, cfg *config.Config) sv.Keycloak {
+func InitKeycloakClient(ctx context.Context, cfg *config.Config, businessError sv.BusinessError) sv.Keycloak {
 	maxRetries := cfg.MaxRetries
 	interval := time.Duration(cfg.Interval) * time.Second
 
-	kc := NewKeycloakClient(cfg)
+	kc := NewKeycloakClient(cfg, businessError)
 
 	for i := 0; i < maxRetries; i++ {
 		if err := kc.CheckHealth(); err == nil {
 			return kc
 		} else {
-			be := businessError.GetBusinessError(err)
+			be := businessError. getBusinessError(err)
 			fields := map[string]interface{}{
 				"retry":     i + 1,
 				"operation": "init.keycloak.client",
@@ -88,12 +89,13 @@ func InitKeycloakClient(ctx context.Context, cfg *config.Config) sv.Keycloak {
 // =====================================================
 // CONSTRUCTOR
 // =====================================================
-func NewKeycloakClient(cfg *config.Config) sv.Keycloak {
+func NewKeycloakClient(cfg *config.Config, businessError sv.BusinessError) sv.Keycloak {
 	return &KeycloakClient{
-		BaseURL: cfg.KeycloakURL,
-		Client:  &http.Client{Timeout: 5 * time.Second},
-		Config:  cfg,
-		Health:  cfg.KeycloakServerHealth,
+		BaseURL:       cfg.KeycloakURL,
+		Client:        &http.Client{Timeout: 5 * time.Second},
+		Config:        cfg,
+		Health:        cfg.KeycloakServerHealth,
+		businessError: businessError,
 	}
 }
 
