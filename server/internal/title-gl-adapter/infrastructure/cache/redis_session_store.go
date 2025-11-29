@@ -6,8 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"server/internal/iam/domain"
-
+	"server/internal/iam/domain/services"
 	"server/pkg/config"
 
 	"github.com/redis/go-redis/v9"
@@ -18,7 +17,7 @@ type RedisSessionStore struct {
 	ttl time.Duration
 }
 
-func NewRedisSessionStore(rdb *redis.Client, ttl time.Duration) domain.SessionStore {
+func NewRedisSessionStore(rdb *redis.Client, ttl time.Duration) *RedisSessionStore {
 	return &RedisSessionStore{rdb: rdb, ttl: ttl}
 }
 
@@ -30,7 +29,7 @@ func sessionKey(sessionID string) string {
 	return "session:" + sessionID
 }
 
-func (r *RedisSessionStore) StoreSession(ctx context.Context, e *domain.SessionEntry) error {
+func (r *RedisSessionStore) StoreSession(ctx context.Context, e *services.SessionEntry) error {
 	key := sessionKey(e.SessionID)
 	fields := map[string]interface{}{
 		"client_pub": base64.StdEncoding.EncodeToString(e.ClientPub),
@@ -47,7 +46,7 @@ func (r *RedisSessionStore) StoreSession(ctx context.Context, e *domain.SessionE
 	return r.rdb.Expire(ctx, key, r.ttl).Err()
 }
 
-func (r *RedisSessionStore) GetSession(ctx context.Context, sessionID string) (*domain.SessionEntry, error) {
+func (r *RedisSessionStore) GetSession(ctx context.Context, sessionID string) (*services.SessionEntry, error) {
 	key := sessionKey(sessionID)
 	m, err := r.rdb.HGetAll(ctx, key).Result()
 	if err != nil || len(m) == 0 {
@@ -75,7 +74,7 @@ func (r *RedisSessionStore) GetSession(ctx context.Context, sessionID string) (*
 		}
 	}
 
-	return &domain.SessionEntry{
+	return &services.SessionEntry{
 		SessionID: sessionID,
 		ClientPub: clientPub,
 		ServerPub: serverPub,

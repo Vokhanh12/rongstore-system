@@ -4,7 +4,6 @@ import (
 	"context"
 
 	iamv1 "server/api/iam/v1"
-	"server/internal/iam/application/mappers"
 	"server/internal/iam/application/usecases"
 
 	"google.golang.org/grpc/codes"
@@ -29,14 +28,14 @@ func NewIamHandler(
 
 func (h *IamHandler) Login(ctx context.Context, req *iamv1.LoginRequest) (*iamv1.LoginResponse, error) {
 
-	cmd := mappers.MapLoginRequestToCommand(req)
+	cmd := usecases.MapLoginRequestToCommand(req)
 
 	result, err := h.loginUsecase.Execute(ctx, cmd)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
-	resDTO := mappers.MapLoginResultToResponseDTO(result)
+	resDTO := usecases.MapLoginResultToResponseDTO(result)
 	return &iamv1.LoginResponse{
 		AccessToken:  resDTO.AccessToken,
 		RefreshToken: resDTO.RefreshToken,
@@ -45,14 +44,14 @@ func (h *IamHandler) Login(ctx context.Context, req *iamv1.LoginRequest) (*iamv1
 
 func (h *IamHandler) Handshake(ctx context.Context, req *iamv1.HandshakeRequest) (*iamv1.HandshakeResponse, error) {
 
-	cmd := mappers.MapHandshakeRequestToCommand(req)
+	cmd := usecases.MapHandshakeRequestToCommand(req)
 
 	result, err := h.handshakeUsecase.Execute(ctx, cmd)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	resDTO := mappers.MapHandshakeResultToResponseDTO(result)
+	resDTO := usecases.MapHandshakeResultToResponseDTO(result)
 	return &iamv1.HandshakeResponse{
 		ServerPublicKey:      resDTO.ServerPublicKey,
 		SessionId:            resDTO.SessionId,

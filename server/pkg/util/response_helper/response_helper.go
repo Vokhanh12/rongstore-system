@@ -5,9 +5,6 @@ import (
 	"context"
 	"time"
 
-	"server/internal/hr/domain"
-	domain_error "server/internal/iam/domain"
-
 	"server/pkg/errors"
 	"server/pkg/util/ctxutil"
 
@@ -23,7 +20,7 @@ import (
 // It sets success=false, fills Metadata, and sets Error code.
 func BuildErrorResponse(ctx context.Context, be *errors.BusinessError) *commonv1.BaseResponse {
 	if be == nil {
-		be = &domain_error.UNKNOWN_DOMAIN_KEY
+		be = &errors.UNKNOWN_DOMAIN_KEY
 	}
 
 	return &commonv1.BaseResponse{
@@ -60,8 +57,8 @@ func BuildSuccessResponse(ctx context.Context, data proto.Message) (*commonv1.Ba
 	}, nil
 }
 
-// FromError converts a generic error into a BaseResponse using BusinessError mapping.
-func FromError(ctx context.Context, err error) *commonv1.BaseResponse {
-	be, _ := domain.GetBusinessError(err)
-	return BuildErrorResponse(ctx, be)
-}
+// // FromError converts a generic error into a BaseResponse using BusinessError mapping.
+// func FromError(ctx context.Context, err error) *commonv1.BaseResponse {
+// 	be, _ := errors.GetBusinessError(err)
+// 	return BuildErrorResponse(ctx, be)
+// }

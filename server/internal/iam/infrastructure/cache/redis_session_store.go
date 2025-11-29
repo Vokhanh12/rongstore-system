@@ -9,6 +9,7 @@ import (
 
 	sv "server/internal/iam/domain/services"
 	"server/pkg/config"
+	"server/pkg/logger"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -18,7 +19,7 @@ type RedisSessionStore struct {
 	ttl time.Duration
 }
 
-func InitRedisSessionStore(cfg *config.Config) sv.RedisSessionStore {
+func InitRedisSessionStore(ctx context.Context, cfg *config.Config) sv.RedisSessionStore {
 	maxRetries := cfg.MaxRetries
 	interval := time.Duration(cfg.Interval) * time.Second
 
@@ -33,6 +34,14 @@ func InitRedisSessionStore(cfg *config.Config) sv.RedisSessionStore {
 				ttl: RedisTTLFromConfig(cfg),
 			}
 		}
+
+		fields := map[string]interface{}{
+			"retry":     i + 1,
+			"operation": "init.keycloak.client",
+			"error":     err.Error(),
+		}
+
+		logger.LogBySeverity(ctx, *be, fields)
 
 		time.Sleep(interval)
 	}

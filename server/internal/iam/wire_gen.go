@@ -8,10 +8,11 @@ package wire
 
 import (
 	"context"
-	"server/internal/iam/application/usecases/auth"
+	"server/internal/iam/application/usecases"
 	"server/internal/iam/infrastructure/cache"
 	"server/internal/iam/infrastructure/client"
 	"server/internal/iam/infrastructure/db"
+	"server/internal/iam/infrastructure/errors"
 	"server/internal/iam/infrastructure/eventbus"
 	"server/internal/iam/infrastructure/repositories"
 	"server/internal/iam/interface/grpc"
@@ -20,17 +21,15 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeIamHandler(ctx context.Context) (IamDeps, error) {
+func InitializeIamHandler(ctx context.Context) IamDeps {
 	configConfig := config.Load()
-	gormDB, err := db.InitGormPostgresDB(configConfig)
-	if err != nil {
-		return IamDeps{}, err
-	}
+	businessError := errors.InitBusinessError(configConfig)
+	gormDB := db.InitGormPostgresDB(ctx, configConfig, businessError)
 	userRepository := repositories.NewGormUserRepository(gormDB)
-	keycloak := client.InitKeycloakClient(ctx, configConfig)
-	loginUsecase := auth.NewLoginUsecase(userRepository, keycloak)
+	keycloak := client.InitKeycloakClient(ctx, configConfig, businessError)
+	loginUsecase := usecases.NewLoginUsecase(userRepository, keycloak)
 	redisSessionStore := cache.InitRedisSessionStore(configConfig)
-	handshakeUsecase := auth.NewHandshakeUsecase(userRepository, redisSessionStore)
+	handshakeUsecase := usecases.NewHandshakeUsecase(userRepository, redisSessionStore)
 	iamHandler := grpc.NewIamHandler(loginUsecase, handshakeUsecase)
 	rabbitMQEventBus := eventbus.InitRabbitMQEventBus(configConfig)
 	iamDeps := IamDeps{
@@ -38,6 +37,7 @@ func InitializeIamHandler(ctx context.Context) (IamDeps, error) {
 		RedisSessionStore: redisSessionStore,
 		Keycloak:          keycloak,
 		EventBus:          rabbitMQEventBus,
+		BusinessError:     businessError,
 	}
-	return iamDeps, nil
+	return iamDeps
 }

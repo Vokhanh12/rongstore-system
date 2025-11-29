@@ -3,10 +3,10 @@ package usecases
 import (
 	"context"
 	iamv1 "server/api/iam/v1"
-	"server/internal/iam/domain"
+	"server/internal/iam/domain/repositories"
+	"server/internal/iam/infrastructure/client"
 )
 
-// --- Command & Result (trước đây ở package commands) ---
 type LoginCommand struct {
 	Email    string
 	Password string
@@ -17,7 +17,6 @@ type LoginResult struct {
 	RefreshToken string
 }
 
-// --- Mapper (trước đây ở package mappers) ---
 func MapLoginRequestToCommand(req *iamv1.LoginRequest) LoginCommand {
 	return LoginCommand{
 		Email:    req.Email,
@@ -32,13 +31,12 @@ func MapLoginResultToResponseDTO(result *LoginResult) iamv1.LoginResponse {
 	}
 }
 
-// --- Usecase (trước đây ở package usecases) ---
 type LoginUserUsecase struct {
-	UserRepo domain.UserRepository
-	Keycloak domain.Keycloak
+	UserRepo repositories.UserRepository
+	Keycloak client.KeycloakClient
 }
 
-func NewLoginUserUsecase(repo domain.UserRepository, kcl domain.Keycloak) *LoginUserUsecase {
+func NewLoginUserUsecase(repo repositories.UserRepository, kcl client.KeycloakClient) *LoginUserUsecase {
 	return &LoginUserUsecase{
 		UserRepo: repo,
 		Keycloak: kcl,

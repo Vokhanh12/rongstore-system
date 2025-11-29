@@ -6,14 +6,16 @@ import (
 	commonv1 "server/api/common/v1"
 	iamv1 "server/api/iam/v1"
 
-	usecases "server/internal/iam/application/usecases/auth"
+	usecases "server/internal/iam/application/usecases"
+	"server/internal/iam/domain/services"
 
-	"server/pkg/util/grpcutil"
+	"server/pkg/logger"
 	reshelper "server/pkg/util/response_helper"
 )
 
 type IamHandler struct {
 	iamv1.UnimplementedIamServiceServer
+	business_errors  services.BusinessError
 	loginUsecase     *usecases.LoginUsecase
 	handshakeUsecase *usecases.HandshakeUsecase
 }
@@ -33,7 +35,14 @@ func (h *IamHandler) Login(ctx context.Context, req *iamv1.LoginRequest) (*commo
 
 	result, err := h.loginUsecase.Execute(ctx, cmd)
 	if err != nil {
-		return grpcutil.HandleBusinessError(ctx, "Login", req, err), nil
+
+		businessError := h.business_errors.GetBusinessError(err)
+		logger.LogBySeverity(ctx, *businessError, map[string]interface{}{
+			"handler": "Login",
+			"request": req,
+		})
+
+		return reshelper.BuildErrorResponse(ctx, businessError), nil
 	}
 
 	resDTO := usecases.MapLoginResultToResponseDTO(result)
@@ -45,7 +54,13 @@ func (h *IamHandler) Handshake(ctx context.Context, req *iamv1.HandshakeRequest)
 
 	result, err := h.handshakeUsecase.Execute(ctx, cmd)
 	if err != nil {
-		return grpcutil.HandleBusinessError(ctx, "Handshake", req, err), nil
+		businessError := h.business_errors.GetBusinessError(err)
+		logger.LogBySeverity(ctx, *businessError, map[string]interface{}{
+			"handler": "Handshake",
+			"request": req,
+		})
+
+		return reshelper.BuildErrorResponse(ctx, businessError), nil
 	}
 
 	resDTO := usecases.MapHandshakeResultToResponseDTO(result)

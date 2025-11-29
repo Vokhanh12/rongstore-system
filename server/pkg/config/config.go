@@ -5,6 +5,9 @@ import (
 	"os"
 	"strconv"
 
+	"server/internal/iam/domain"
+	"server/pkg/errors"
+
 	"github.com/joho/godotenv"
 )
 
@@ -52,6 +55,8 @@ type Config struct {
 
 	MaxRetries int
 	Interval   int
+
+	IAMDefaultErrors map[string]errors.BusinessError
 }
 
 func Load() *Config {
@@ -120,6 +125,8 @@ func Load() *Config {
 
 		MaxRetries: maxRetries,
 		Interval:   interval,
+
+		IAMDefaultErrors: domain.ErrorByCode,
 	}
 }
 

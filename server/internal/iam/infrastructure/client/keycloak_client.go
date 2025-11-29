@@ -10,7 +10,8 @@ import (
 	"net/url"
 	"time"
 
-	businessError "server/internal/iam/domain"
+	domain_errors "server/internal/iam/domain"
+	"server/internal/iam/domain/services"
 	sv "server/internal/iam/domain/services"
 	"server/pkg/config"
 	"server/pkg/errors"
@@ -24,7 +25,7 @@ type KeycloakClient struct {
 	Client        *http.Client
 	Config        *config.Config
 	Health        string
-	businessError sv.BusinessError
+	businessError services.BusinessError
 }
 
 // func (kc *KeycloakClient) GetUserPermissions(ctx context.Context, accessToken string) ([]sv.Permission, *errors.BusinessError) {
@@ -51,17 +52,17 @@ type KeycloakClient struct {
 // =====================================================
 // INIT — giống hệt RedisSessionStore pattern
 // =====================================================
-func InitKeycloakClient(ctx context.Context, cfg *config.Config, businessError sv.BusinessError) sv.Keycloak {
+func InitKeycloakClient(ctx context.Context, cfg *config.Config, infbe services.BusinessError) sv.Keycloak {
 	maxRetries := cfg.MaxRetries
 	interval := time.Duration(cfg.Interval) * time.Second
 
-	kc := NewKeycloakClient(cfg, businessError)
+	kc := NewKeycloakClient(cfg, infbe)
 
 	for i := 0; i < maxRetries; i++ {
 		if err := kc.CheckHealth(); err == nil {
 			return kc
 		} else {
-			be := businessError. getBusinessError(err)
+			be := infbe.GetBusinessError(err)
 			fields := map[string]interface{}{
 				"retry":     i + 1,
 				"operation": "init.keycloak.client",
@@ -74,7 +75,7 @@ func InitKeycloakClient(ctx context.Context, cfg *config.Config, businessError s
 		time.Sleep(interval)
 	}
 
-	be := businessError.KEYCLOAK_UNAVAILABLE
+	be := domain_errors.KEYCLOAK_UNAVAILABLE
 	panic(fmt.Sprintf(
 		"PANIC: [%s][%s] %s | cause: %s | server_action: %s | retryable: %v",
 		be.Code,
@@ -86,10 +87,7 @@ func InitKeycloakClient(ctx context.Context, cfg *config.Config, businessError s
 	))
 }
 
-// =====================================================
-// CONSTRUCTOR
-// =====================================================
-func NewKeycloakClient(cfg *config.Config, businessError sv.BusinessError) sv.Keycloak {
+func NewKeycloakClient(cfg *config.Config, businessError services.BusinessError) sv.Keycloak {
 	return &KeycloakClient{
 		BaseURL:       cfg.KeycloakURL,
 		Client:        &http.Client{Timeout: 5 * time.Second},
@@ -103,27 +101,21 @@ func (kc *KeycloakClient) GetBaseURL() string {
 	return kc.BaseURL
 }
 
-// =====================================================
-// HEALTH CHECK
-// =====================================================
 func (kc *KeycloakClient) CheckHealth() *errors.BusinessError {
 	resp, err := kc.Client.Get(kc.Health)
 	if err != nil {
-		return errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
+		return errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
+		return errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
 
 	return nil
 }
 
-// =====================================================
-// TOKEN REQUEST HELPERS
-// =====================================================
 func (kc *KeycloakClient) tokenEndpoint() string {
 	return fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token",
 		kc.BaseURL,
@@ -157,9 +149,6 @@ func (kc *KeycloakClient) doFormRequest(
 	return respBody, resp.StatusCode, readErr
 }
 
-// =====================================================
-// GET TOKEN
-// =====================================================
 func (kc *KeycloakClient) GetToken(
 	ctx context.Context,
 	username, password string,
@@ -175,7 +164,7 @@ func (kc *KeycloakClient) GetToken(
 
 	respBody, status, err := kc.doFormRequest(ctx, form)
 	if err != nil {
-		return nil, errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
+		return nil, errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
 
 	if status != http.StatusOK {
@@ -184,19 +173,16 @@ func (kc *KeycloakClient) GetToken(
 
 	var token sv.Token
 	if err := json.Unmarshal(respBody, &token); err != nil {
-		return nil, errors.Clone(businessError.INTERNAL_FALLBACK)
+		return nil, errors.Clone(errors.INTERNAL_FALLBACK)
 	}
 
 	if token.AccessToken == "" {
-		return nil, errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
+		return nil, errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
 
 	return &token, nil
 }
 
-// =====================================================
-// REFRESH TOKEN
-// =====================================================
 func (kc *KeycloakClient) RefreshToken(
 	ctx context.Context,
 	refreshToken string,
@@ -210,7 +196,7 @@ func (kc *KeycloakClient) RefreshToken(
 
 	respBody, status, err := kc.doFormRequest(ctx, form)
 	if err != nil {
-		return nil, errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
+		return nil, errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
 
 	if status != http.StatusOK {
@@ -219,19 +205,16 @@ func (kc *KeycloakClient) RefreshToken(
 
 	var token sv.Token
 	if err := json.Unmarshal(respBody, &token); err != nil {
-		return nil, errors.Clone(businessError.INTERNAL_FALLBACK)
+		return nil, errors.Clone(errors.INTERNAL_FALLBACK)
 	}
 
 	if token.AccessToken == "" {
-		return nil, errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
+		return nil, errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
 
 	return &token, nil
 }
 
-// =====================================================
-// ERROR MAPPING
-// =====================================================
 func (kc *KeycloakClient) mapKeycloakError(respBody []byte) (*sv.Token, *errors.BusinessError) {
 	var kcErr struct {
 		Error            string `json:"error"`
@@ -239,13 +222,13 @@ func (kc *KeycloakClient) mapKeycloakError(respBody []byte) (*sv.Token, *errors.
 	}
 
 	if err := json.Unmarshal(respBody, &kcErr); err != nil {
-		return nil, errors.Clone(businessError.INTERNAL_FALLBACK)
+		return nil, errors.Clone(errors.INTERNAL_FALLBACK)
 	}
 
 	switch kcErr.Error {
 	case "invalid_grant":
-		return nil, errors.Clone(businessError.INVALID_CREDENTIALS)
+		return nil, errors.Clone(domain_errors.INVALID_CREDENTIALS)
 	default:
-		return nil, errors.Clone(businessError.KEYCLOAK_UNAVAILABLE)
+		return nil, errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
 }

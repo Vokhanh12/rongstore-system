@@ -186,6 +186,19 @@ var (
 		ServerAction: "Alert; verify Keycloak server status",
 	}
 
+	POSTGRES_UNAVAILABLE = errors.BusinessError{
+		Key: "POSTGRES_UNAVAILABLE",
+		Code: "AUTH-INFRA-004",
+		Status: 503,
+		GRPCCode: "Unavailable",
+		Message: "Postgres database service temporarily unavailable",
+		Severity: "S1",
+		Retryable: true,
+		Cause: "Cannot connect to Postgres after multiple retries",
+		ClientAction: "Retry operation after delay",
+		ServerAction: "Alert; verify Postgres server health",
+	}
+
 )
 
 // ErrorByCode maps error codes to their BusinessError definitions
@@ -204,4 +217,5 @@ var ErrorByCode = map[string]errors.BusinessError{
 	"AUTH-INFRA-001": DB_TIMEOUT,
 	"AUTH-INFRA-002": REDIS_UNAVAILABLE,
 	"AUTH-INFRA-003": KEYCLOAK_UNAVAILABLE,
+	"AUTH-INFRA-004": POSTGRES_UNAVAILABLE,
 }

@@ -9,5 +9,5 @@ type BusinessError interface {
 	WithData(data map[string]interface{}) func(*errors.BusinessError)
 	GetErrorByCode(code string) *errors.BusinessError
 	NewBusinessError(template errors.BusinessError, opts ...func(*errors.BusinessError)) *errors.BusinessError
-	GetBusinessError(arrErrs map[string]errors.BusinessError, err error) *errors.BusinessError
+	GetBusinessError(err error) *errors.BusinessError
 }

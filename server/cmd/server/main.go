@@ -4,19 +4,17 @@ import (
 	"context"
 	"log"
 	"net"
-	"net/http"
 
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
 	iampb "server/api/iam/v1"
 	wire "server/internal/iam"
-	domain_errors "server/internal/iam/domain"
 	"server/pkg/auth"
 	"server/pkg/config"
 	"server/pkg/logger"
-	"server/pkg/metrics"
+
+	// "server/pkg/metrics"
 	obs_grpc "server/pkg/observability/grpc"
 )
 
@@ -30,14 +28,15 @@ func main() {
 
 	cfg := config.Load()
 
-	metrics.Register()
-	go func() {
-		http.Handle("/metrics", promhttp.Handler())
-		if err := http.ListenAndServe(":9090", nil); err != nil {
-			be := domain_errors.GetBusinessError(err)
-			logger.LogInfraError(ctx, *be, "", nil)
-		}
-	}()
+	// metrics.Register()
+
+	// go func() {
+	// 	http.Handle("/metrics", promhttp.Handler())
+	// 	if err := http.ListenAndServe(":9090", nil); err != nil {
+	// 		be := services.GetBusinessError(err)
+	// 		logger.LogInfraError(ctx, *be, "", nil)
+	// 	}
+	// }()
 
 	logger.LogAccess(ctx, logger.AccessParams{
 		Service:  "iam_service",
@@ -48,15 +47,11 @@ func main() {
 		HTTPCode: 0,
 	})
 
-	deps, err := wire.InitializeIamHandler(ctx)
-	if err != nil {
-		be := domain_errors.GetBusinessError(err)
-		logger.LogInfraError(ctx, *be, "", nil)
-	}
+	deps := wire.InitializeIamHandler(ctx)
 
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
-		be := domain_errors.GetBusinessError(err)
+		be := deps.BusinessError.GetBusinessError(err)
 		logger.LogInfraError(ctx, *be, "", nil)
 	}
 
@@ -73,7 +68,7 @@ func main() {
 	iampb.RegisterIamServiceServer(grpcServer, deps.Handler)
 
 	if err := grpcServer.Serve(lis); err != nil {
-		be := domain_errors.GetBusinessError(err)
+		be := deps.BusinessError.GetBusinessError(err)
 		logger.LogInfraError(ctx, *be, "", nil)
 	}
 }

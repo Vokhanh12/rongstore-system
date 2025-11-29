@@ -15,6 +15,9 @@ import (
 
 	iamv1 "server/api/iam/v1"
 	"server/internal/iam/domain"
+	"server/internal/iam/domain/repositories"
+	"server/internal/iam/domain/services"
+	"server/internal/iam/infrastructure/cache"
 	"server/pkg/crypto"
 	"server/pkg/errors"
 )
@@ -51,11 +54,11 @@ func MapHandshakeResultToResponseDTO(result *HandshakeResult) iamv1.HandshakeRes
 
 // --- Usecase ---
 type HandshakeUsecase struct {
-	UserRepo     domain.UserRepository
-	SessionStore domain.SessionStore
+	UserRepo     repositories.UserRepository
+	SessionStore cache.RedisSessionStore
 }
 
-func NewHandshakeUsecase(repo domain.UserRepository, store domain.SessionStore) *HandshakeUsecase {
+func NewHandshakeUsecase(repo repositories.UserRepository, store cache.RedisSessionStore) *HandshakeUsecase {
 	return &HandshakeUsecase{
 		UserRepo:     repo,
 		SessionStore: store,
@@ -148,7 +151,7 @@ func (u *HandshakeUsecase) Execute(ctx context.Context, cmd HandshakeCommand) (*
 	ks2c := okm[32:64]
 
 	// 9) Store session
-	entry := &domain.SessionEntry{
+	entry := &services.SessionEntry{
 		SessionID: sessionID,
 		ClientPub: clientPubBytes,
 		ServerPub: serverPubBytes,

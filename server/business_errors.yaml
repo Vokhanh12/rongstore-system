@@ -175,6 +175,17 @@ services:
         client_action: "Retry authentication/authorization"
         server_action: "Alert; verify Keycloak server status"
 
+      - code: AUTH-INFRA-004
+        key: POSTGRES_UNAVAILABLE
+        http_status: 503
+        grpc_code: Unavailable
+        message: "Postgres database service temporarily unavailable"
+        severity: S1
+        retryable: true
+        cause: "Cannot connect to Postgres after multiple retries"
+        client_action: "Retry operation after delay"
+        server_action: "Alert; verify Postgres server health"
+
   hr:
     conventions:
       code_format: "<DOMAIN>-<AREA>-<NNN>"
