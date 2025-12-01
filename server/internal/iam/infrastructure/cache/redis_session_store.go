@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"server/internal/iam/domain/services"
 	sv "server/internal/iam/domain/services"
 	"server/pkg/config"
 	"server/pkg/logger"
@@ -19,16 +20,15 @@ type RedisSessionStore struct {
 	ttl time.Duration
 }
 
-func InitRedisSessionStore(ctx context.Context, cfg *config.Config) sv.RedisSessionStore {
+func InitRedisSessionStore(ctx context.Context, cfg *config.Config, infbe services.BusinessError) sv.RedisSessionStore {
 	maxRetries := cfg.MaxRetries
 	interval := time.Duration(cfg.Interval) * time.Second
 
-	var rdb *redis.Client
-
 	for i := 0; i < maxRetries; i++ {
-		rdb = newRedisClient(cfg)
+		rdb := newRedisClient(cfg)
 
-		if rdb != nil && pingRedis(rdb) == nil {
+		err := pingRedis(rdb)
+		if err == nil {
 			return &RedisSessionStore{
 				rdb: rdb,
 				ttl: RedisTTLFromConfig(cfg),
@@ -37,13 +37,16 @@ func InitRedisSessionStore(ctx context.Context, cfg *config.Config) sv.RedisSess
 
 		fields := map[string]interface{}{
 			"retry":     i + 1,
-			"operation": "init.keycloak.client",
-			"error":     err.Error(),
+			"operation": "init.redis.session.store",
 		}
 
-		logger.LogBySeverity(ctx, *be, fields)
+		if i < maxRetries-1 {
+			logger.LogInfraDebug(ctx, err, "", fields)
+		} else {
+			logger.LogBySeverity(ctx, err, fields)
+		}
 
-		time.Sleep(interval)
+		time.Sleep(interval * time.Duration(1<<i))
 	}
 
 	return nil

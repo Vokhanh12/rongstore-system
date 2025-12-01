@@ -49,9 +49,7 @@ type KeycloakClient struct {
 // 	return nil, nil
 
 // }
-// =====================================================
-// INIT — giống hệt RedisSessionStore pattern
-// =====================================================
+
 func InitKeycloakClient(ctx context.Context, cfg *config.Config, infbe services.BusinessError) sv.Keycloak {
 	maxRetries := cfg.MaxRetries
 	interval := time.Duration(cfg.Interval) * time.Second
@@ -59,22 +57,26 @@ func InitKeycloakClient(ctx context.Context, cfg *config.Config, infbe services.
 	kc := NewKeycloakClient(cfg, infbe)
 
 	for i := 0; i < maxRetries; i++ {
-		if err := kc.CheckHealth(); err == nil {
+		if err := kc.CheckHealth(ctx); err == nil {
 			return kc
 		} else {
-			be := infbe.GetBusinessError(err)
 			fields := map[string]interface{}{
 				"retry":     i + 1,
+				"max_retry": maxRetries,
 				"operation": "init.keycloak.client",
-				"error":     err.Error(),
 			}
 
-			logger.LogBySeverity(ctx, *be, fields)
+			if i < maxRetries-1 {
+				logger.LogInfraDebug(ctx, err, "", fields)
+			} else {
+				logger.LogBySeverity(ctx, err, fields)
+			}
 		}
 
-		time.Sleep(interval)
+		time.Sleep(interval * time.Duration(1<<i))
 	}
 
+	// Nếu tất cả retry thất bại, panic hoặc trả error tùy policy
 	be := domain_errors.KEYCLOAK_UNAVAILABLE
 	panic(fmt.Sprintf(
 		"PANIC: [%s][%s] %s | cause: %s | server_action: %s | retryable: %v",
@@ -101,15 +103,17 @@ func (kc *KeycloakClient) GetBaseURL() string {
 	return kc.BaseURL
 }
 
-func (kc *KeycloakClient) CheckHealth() *errors.BusinessError {
+func (kc *KeycloakClient) CheckHealth(ctx context.Context) *errors.BusinessError {
 	resp, err := kc.Client.Get(kc.Health)
 	if err != nil {
+		logger.LogInfraDebug(ctx, err, "", map[string]interface{}{})
 		return errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		logger.LogInfraDebug(ctx, err, "", map[string]interface{}{})
 		return errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
 

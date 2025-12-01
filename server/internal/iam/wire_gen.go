@@ -23,12 +23,12 @@ import (
 
 func InitializeIamHandler(ctx context.Context) IamDeps {
 	configConfig := config.Load()
-	businessError := errors.InitBusinessError(configConfig)
-	gormDB := db.InitGormPostgresDB(ctx, configConfig, businessError)
+	gormDB := db.InitGormPostgresDB(ctx, configConfig)
 	userRepository := repositories.NewGormUserRepository(gormDB)
+	businessError := errors.InitBusinessError(configConfig)
 	keycloak := client.InitKeycloakClient(ctx, configConfig, businessError)
 	loginUsecase := usecases.NewLoginUsecase(userRepository, keycloak)
-	redisSessionStore := cache.InitRedisSessionStore(configConfig)
+	redisSessionStore := cache.InitRedisSessionStore(ctx, configConfig, businessError)
 	handshakeUsecase := usecases.NewHandshakeUsecase(userRepository, redisSessionStore)
 	iamHandler := grpc.NewIamHandler(loginUsecase, handshakeUsecase)
 	rabbitMQEventBus := eventbus.InitRabbitMQEventBus(configConfig)

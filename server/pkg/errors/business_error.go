@@ -1,6 +1,7 @@
 package errors
 
 import (
+	sterrors "errors"
 	"fmt"
 )
 
@@ -33,10 +34,41 @@ func NewBusinessError(template BusinessError, opts ...func(*BusinessError)) *Bus
 	return &be
 }
 
-func WithMessage(msg string) func(*BusinessError) {
-	return func(be *BusinessError) {
-		be.Message = msg
+func Clone(be BusinessError) *BusinessError {
+	newBe := be
+	if be.Data != nil {
+		newData := make(map[string]interface{}, len(be.Data))
+		for k, v := range be.Data {
+			newData[k] = v
+		}
+		newBe.Data = newData
 	}
+	return &newBe
+}
+
+func GetBusinessError(err error) *BusinessError {
+	if err == nil {
+		return nil
+	}
+
+	var be *BusinessError
+	if sterrors.As(err, &be) {
+		return be
+	}
+
+	type coder interface {
+		Code() string
+	}
+
+	var c coder
+	if sterrors.As(err, &c) {
+		if mapped, ok := ErrorByCode[c.Code()]; ok {
+			be := mapped
+			return &be
+		}
+	}
+
+	return Clone(UNKNOWN_DOMAIN_KEY)
 }
 
 func WithData(data map[string]interface{}) func(*BusinessError) {
@@ -45,41 +77,8 @@ func WithData(data map[string]interface{}) func(*BusinessError) {
 	}
 }
 
-func (e *BusinessError) MessageOr(fallback string) string {
-	if e == nil || e.Message == "" {
-		return fallback
+func WithMessage(msg string) func(*BusinessError) {
+	return func(be *BusinessError) {
+		be.Message = msg
 	}
-	return e.Message
-}
-
-func (e *BusinessError) WithExtra(data map[string]interface{}) *BusinessError {
-	if e == nil {
-		return nil
-	}
-	if e.Data == nil {
-		e.Data = map[string]interface{}{}
-	}
-	for k, v := range data {
-		e.Data[k] = v
-	}
-	return e
-}
-
-func Clone(be BusinessError) *BusinessError {
-	c := be
-	return &c
-}
-
-func GetErrorByCode(arrErrs map[string]BusinessError, code string) *BusinessError {
-	if err, ok := arrErrs[code]; ok {
-		return &err
-	}
-	return Clone(UNKNOWN_DOMAIN_KEY)
-}
-
-func GetBusinessError(arrErrs map[string]BusinessError, err error) *BusinessError {
-	if be, ok := err.(*BusinessError); ok {
-		return be
-	}
-	return Clone(UNKNOWN_DOMAIN_KEY)
 }

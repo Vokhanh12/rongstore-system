@@ -15,11 +15,12 @@ import (
 
 // -------------------- Loggers --------------------
 var (
-	AccessLogger   *zap.Logger
-	AuditLogger    *zap.Logger
-	BusinessLogger *zap.Logger
-	InfraLogger    *zap.Logger
-	SecurityLogger *zap.Logger
+	AccessLogger     *zap.Logger
+	AuditLogger      *zap.Logger
+	BusinessLogger   *zap.Logger
+	InfraLogger      *zap.Logger
+	DebugInfraLogger *zap.Logger
+	SecurityLogger   *zap.Logger
 )
 
 // -------------------- Severity → Zap Level mapping --------------------
@@ -51,7 +52,7 @@ func Init() error {
 		EncodeDuration: zapcore.SecondsDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
-	jsonEncoder := zapcore.NewJSONEncoder(encoderCfg)
+	jsonEncoder := zapcore.NewConsoleEncoder(encoderCfg)
 
 	var err error
 	AccessLogger, err = newFileLogger("logs/access.log", jsonEncoder, zap.InfoLevel)
@@ -70,6 +71,10 @@ func Init() error {
 	if err != nil {
 		return err
 	}
+	DebugInfraLogger, err = newFileLogger("logs/debug_infra_error.log", jsonEncoder, zap.DebugLevel)
+	if err != nil {
+		return err
+	}
 	SecurityLogger, err = newFileLogger("logs/security.log", jsonEncoder, zap.WarnLevel)
 	if err != nil {
 		return err
@@ -78,17 +83,15 @@ func Init() error {
 
 }
 
-// helper to create single file logger
 func newFileLogger(path string, enc zapcore.Encoder, lvl zapcore.LevelEnabler) (*zap.Logger, error) {
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o640)
 	if err != nil {
 		return nil, err
 	}
 	core := zapcore.NewCore(enc, zapcore.AddSync(f), lvl)
-	return zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel)), nil
+	return zap.New(core), nil
 }
 
-// -------------------- Helpers --------------------
 func buildFields(ctx context.Context, extra map[string]interface{}) []zap.Field {
 	fields := []zap.Field{
 		zap.String("trace_id", ctxutil.GetIDFromContext(ctx)),
@@ -205,33 +208,49 @@ func LogSecurity(ctx context.Context, action, reason, msg string, extra map[stri
 	SecurityLogger.With(fields...).Warn(msg)
 }
 
-func LogBusinessError(ctx context.Context, err errors.BusinessError, extra map[string]interface{}) {
+func LogBusinessError(ctx context.Context, err error, extra map[string]interface{}) {
+
+	be := errors.GetBusinessError(err)
+
 	fields := []zap.Field{
 		zap.String("service", instance()),
 		zap.String("event.type", "business_error"),
 		zap.String("event.action", "business_failure"),
-		zap.String("error.code", err.Code),
-		zap.String("error.message", err.Message),
-		zap.String("error.severity", err.Severity),
-		zap.Bool("error.retryable", err.Retryable),
+		zap.String("error.code", be.Code),
+		zap.String("error.message", be.Message),
+		zap.String("error.severity", be.Severity),
+		zap.Bool("error.retryable", be.Retryable),
 	}
 	fields = append(fields, buildFields(ctx, extra)...)
 	BusinessLogger.With(fields...).Warn("business error")
 }
 
-func LogInfraError(ctx context.Context, err errors.BusinessError, stack string, extra map[string]interface{}) {
+func LogInfraError(ctx context.Context, err error, stack string, extra map[string]interface{}) {
+
+	be := errors.GetBusinessError(err)
+
 	fields := []zap.Field{
 		zap.String("service", instance()),
 		zap.String("event.type", "infra_error"),
 		zap.String("event.action", "infra_failure"),
-		zap.String("error.code", err.Code),
-		zap.String("error.message", err.Message),
-		zap.String("error.severity", err.Severity),
-		zap.Bool("error.retryable", err.Retryable),
+		zap.String("error.code", be.Code),
+		zap.String("error.message", be.Message),
+		zap.String("error.severity", be.Severity),
+		zap.Bool("error.retryable", be.Retryable),
 		zap.String("error.stack", stack),
 	}
 	fields = append(fields, buildFields(ctx, extra)...)
+
 	InfraLogger.With(fields...).Error("infrastructure error")
+	DebugInfraLogger.With(fields...).Error("infrastructure debug error")
+}
+
+func LogInfraDebug(ctx context.Context, err error, stack string, extra map[string]interface{}) {
+	fields := []zap.Field{
+		zap.String("error", err.Error()),
+	}
+	fields = append(fields, buildFields(ctx, extra)...)
+	DebugInfraLogger.With(fields...).Debug("infrastructure debug")
 }
 
 func LogError(ctx context.Context, action, errMsg, stack string, extra map[string]interface{}) {
@@ -247,13 +266,17 @@ func LogError(ctx context.Context, action, errMsg, stack string, extra map[strin
 }
 
 // -------------------- Log by Severity --------------------
-func LogBySeverity(ctx context.Context, err errors.BusinessError, extra map[string]interface{}) {
-	level := zapLevelFromSeverity(err.Severity)
+func LogBySeverity(ctx context.Context, err error, extra map[string]interface{}) {
+
+	be := errors.GetBusinessError(err)
+	level := zapLevelFromSeverity(be.Severity)
+
 	switch level {
 	case zap.ErrorLevel:
+		LogInfraDebug(ctx, err, "", extra)
 		LogInfraError(ctx, err, "", extra)
 	case zap.WarnLevel:
-		LogBusinessError(ctx, err, extra)
+		LogBusinessError(ctx, be, extra)
 	default:
 		LogAccess(ctx, AccessParams{Extra: extra})
 	}

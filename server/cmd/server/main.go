@@ -51,8 +51,7 @@ func main() {
 
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
-		be := deps.BusinessError.GetBusinessError(err)
-		logger.LogInfraError(ctx, *be, "", nil)
+		logger.LogInfraError(ctx, err, "", nil)
 	}
 
 	grpcServer := grpc.NewServer(
@@ -68,8 +67,7 @@ func main() {
 	iampb.RegisterIamServiceServer(grpcServer, deps.Handler)
 
 	if err := grpcServer.Serve(lis); err != nil {
-		be := deps.BusinessError.GetBusinessError(err)
-		logger.LogInfraError(ctx, *be, "", nil)
+		logger.LogInfraError(ctx, err, "", nil)
 	}
 }
 

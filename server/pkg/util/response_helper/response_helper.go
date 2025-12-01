@@ -18,10 +18,9 @@ import (
 
 // BuildErrorResponse builds a BaseResponse representing a failed operation.
 // It sets success=false, fills Metadata, and sets Error code.
-func BuildErrorResponse(ctx context.Context, be *errors.BusinessError) *commonv1.BaseResponse {
-	if be == nil {
-		be = &errors.UNKNOWN_DOMAIN_KEY
-	}
+func BuildErrorResponse(ctx context.Context, err error) *commonv1.BaseResponse {
+
+	be := errors.GetBusinessError(err)
 
 	return &commonv1.BaseResponse{
 		Success: false,

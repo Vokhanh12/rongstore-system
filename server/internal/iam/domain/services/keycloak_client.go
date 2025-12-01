@@ -26,7 +26,7 @@ type Permission struct {
 type Keycloak interface {
 	GetToken(ctx context.Context, username, password string) (*Token, *errors.BusinessError)
 	RefreshToken(ctx context.Context, refreshToken string) (*Token, *errors.BusinessError)
-	CheckHealth() *errors.BusinessError
+	CheckHealth(ctx context.Context) *errors.BusinessError
 	GetBaseURL() string
 	//GetUserPermissions(ctx context.Context, accessToken string) ([]Permission, *errors.BusinessError)
 }

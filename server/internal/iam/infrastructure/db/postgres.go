@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"server/internal/iam/domain/services"
 	"server/pkg/config"
 	"server/pkg/logger"
 
@@ -15,7 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func InitGormPostgresDB(ctx context.Context, cfg *config.Config, infbe services.BusinessError) *gorm.DB {
+func InitGormPostgresDB(ctx context.Context, cfg *config.Config) *gorm.DB {
 	maxRetries := cfg.MaxRetries
 	interval := time.Duration(cfg.Interval) * time.Second
 
@@ -37,13 +36,13 @@ func InitGormPostgresDB(ctx context.Context, cfg *config.Config, infbe services.
 			return db
 		}
 
-		be := infbe.GetBusinessError(err)
 		fields := map[string]interface{}{
 			"retry":     i + 1,
 			"operation": "init.gorm.postgres",
 			"error":     err.Error(),
 		}
-		logger.LogBySeverity(ctx, *be, fields)
+
+		logger.LogBySeverity(ctx, err, fields)
 		time.Sleep(interval)
 	}
 

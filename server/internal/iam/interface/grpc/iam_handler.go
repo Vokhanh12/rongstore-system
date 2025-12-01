@@ -36,13 +36,12 @@ func (h *IamHandler) Login(ctx context.Context, req *iamv1.LoginRequest) (*commo
 	result, err := h.loginUsecase.Execute(ctx, cmd)
 	if err != nil {
 
-		businessError := h.business_errors.GetBusinessError(err)
-		logger.LogBySeverity(ctx, *businessError, map[string]interface{}{
+		logger.LogBySeverity(ctx, err, map[string]interface{}{
 			"handler": "Login",
 			"request": req,
 		})
 
-		return reshelper.BuildErrorResponse(ctx, businessError), nil
+		return reshelper.BuildErrorResponse(ctx, err), nil
 	}
 
 	resDTO := usecases.MapLoginResultToResponseDTO(result)
@@ -54,13 +53,13 @@ func (h *IamHandler) Handshake(ctx context.Context, req *iamv1.HandshakeRequest)
 
 	result, err := h.handshakeUsecase.Execute(ctx, cmd)
 	if err != nil {
-		businessError := h.business_errors.GetBusinessError(err)
-		logger.LogBySeverity(ctx, *businessError, map[string]interface{}{
+
+		logger.LogBySeverity(ctx, err, map[string]interface{}{
 			"handler": "Handshake",
 			"request": req,
 		})
 
-		return reshelper.BuildErrorResponse(ctx, businessError), nil
+		return reshelper.BuildErrorResponse(ctx, err), nil
 	}
 
 	resDTO := usecases.MapHandshakeResultToResponseDTO(result)
