@@ -4,7 +4,7 @@ package domain
 import "server/pkg/errors"
 
 var (
-	LOGIN_EMAIL_EMPTY = errors.BusinessError{
+	LOGIN_EMAIL_EMPTY = errors.AppError{
 		Key: "LOGIN_EMAIL_EMPTY",
 		Code: "AUTH-VAL-001",
 		Status: 400,
@@ -17,7 +17,7 @@ var (
 		ServerAction: "Log debug; no alert",
 	}
 
-	LOGIN_EMAIL_INVALID = errors.BusinessError{
+	LOGIN_EMAIL_INVALID = errors.AppError{
 		Key: "LOGIN_EMAIL_INVALID",
 		Code: "AUTH-VAL-002",
 		Status: 400,
@@ -30,7 +30,7 @@ var (
 		ServerAction: "Log debug for malformed input",
 	}
 
-	LOGIN_PASSWORD_EMPTY = errors.BusinessError{
+	LOGIN_PASSWORD_EMPTY = errors.AppError{
 		Key: "LOGIN_PASSWORD_EMPTY",
 		Code: "AUTH-VAL-003",
 		Status: 400,
@@ -43,7 +43,7 @@ var (
 		ServerAction: "Log debug",
 	}
 
-	LOGIN_PAYLOAD_INVALID = errors.BusinessError{
+	LOGIN_PAYLOAD_INVALID = errors.AppError{
 		Key: "LOGIN_PAYLOAD_INVALID",
 		Code: "AUTH-VAL-004",
 		Status: 400,
@@ -56,7 +56,7 @@ var (
 		ServerAction: "Log warn for debug purposes",
 	}
 
-	HANDSHAKE_INVALID_CLIENT_KEY = errors.BusinessError{
+	HANDSHAKE_INVALID_CLIENT_KEY = errors.AppError{
 		Key: "HANDSHAKE_INVALID_CLIENT_KEY",
 		Code: "AUTH-HAND-001",
 		Status: 400,
@@ -69,7 +69,7 @@ var (
 		ServerAction: "Log warn with trace_id; no alert",
 	}
 
-	HANDSHAKE_KEY_AGREEMENT_FAIL = errors.BusinessError{
+	HANDSHAKE_KEY_AGREEMENT_FAIL = errors.AppError{
 		Key: "HANDSHAKE_KEY_AGREEMENT_FAIL",
 		Code: "AUTH-HAND-002",
 		Status: 422,
@@ -82,7 +82,7 @@ var (
 		ServerAction: "Log warn; verify accepted curves list",
 	}
 
-	HANDSHAKE_RNG_FAIL = errors.BusinessError{
+	HANDSHAKE_RNG_FAIL = errors.AppError{
 		Key: "HANDSHAKE_RNG_FAIL",
 		Code: "AUTH-HAND-003",
 		Status: 500,
@@ -95,7 +95,7 @@ var (
 		ServerAction: "Alert; investigate RNG availability",
 	}
 
-	HANDSHAKE_KEY_DERIVE_FAIL = errors.BusinessError{
+	HANDSHAKE_KEY_DERIVE_FAIL = errors.AppError{
 		Key: "HANDSHAKE_KEY_DERIVE_FAIL",
 		Code: "AUTH-HAND-004",
 		Status: 500,
@@ -108,7 +108,7 @@ var (
 		ServerAction: "Alert; investigate HKDF process",
 	}
 
-	HANDSHAKE_STORAGE_FAIL = errors.BusinessError{
+	HANDSHAKE_STORAGE_FAIL = errors.AppError{
 		Key: "HANDSHAKE_STORAGE_FAIL",
 		Code: "AUTH-HAND-005",
 		Status: 500,
@@ -121,7 +121,7 @@ var (
 		ServerAction: "Alert; check session store health",
 	}
 
-	INVALID_CREDENTIALS = errors.BusinessError{
+	INVALID_CREDENTIALS = errors.AppError{
 		Key: "INVALID_CREDENTIALS",
 		Code: "AUTH-LOGIN-001",
 		Status: 401,
@@ -134,7 +134,7 @@ var (
 		ServerAction: "Log info; consider login attempt metrics",
 	}
 
-	TOKEN_EXPIRED = errors.BusinessError{
+	TOKEN_EXPIRED = errors.AppError{
 		Key: "TOKEN_EXPIRED",
 		Code: "AUTH-TOKEN-001",
 		Status: 401,
@@ -147,7 +147,7 @@ var (
 		ServerAction: "Log info; track token expiry patterns",
 	}
 
-	DB_TIMEOUT = errors.BusinessError{
+	DB_TIMEOUT = errors.AppError{
 		Key: "DB_TIMEOUT",
 		Code: "AUTH-INFRA-001",
 		Status: 503,
@@ -160,7 +160,7 @@ var (
 		ServerAction: "Alert; check DB health/capacity",
 	}
 
-	REDIS_UNAVAILABLE = errors.BusinessError{
+	REDIS_UNAVAILABLE = errors.AppError{
 		Key: "REDIS_UNAVAILABLE",
 		Code: "AUTH-INFRA-002",
 		Status: 503,
@@ -173,7 +173,7 @@ var (
 		ServerAction: "Alert; check Redis cluster health",
 	}
 
-	KEYCLOAK_UNAVAILABLE = errors.BusinessError{
+	KEYCLOAK_UNAVAILABLE = errors.AppError{
 		Key: "KEYCLOAK_UNAVAILABLE",
 		Code: "AUTH-INFRA-003",
 		Status: 503,
@@ -186,7 +186,7 @@ var (
 		ServerAction: "Alert; verify Keycloak server status",
 	}
 
-	POSTGRES_UNAVAILABLE = errors.BusinessError{
+	POSTGRES_UNAVAILABLE = errors.AppError{
 		Key: "POSTGRES_UNAVAILABLE",
 		Code: "AUTH-INFRA-004",
 		Status: 503,
@@ -199,10 +199,218 @@ var (
 		ServerAction: "Alert; verify Postgres server health",
 	}
 
+	KEYCLOAK_CONFIG_INVALID = errors.AppError{
+		Key: "KEYCLOAK_CONFIG_INVALID",
+		Code: "AUTH-INFRA-005",
+		Status: 500,
+		GRPCCode: "Internal",
+		Message: "Invalid Keycloak configuration",
+		Severity: "S1",
+		Retryable: false,
+		Cause: "Keycloak URL/credentials/realm invalid",
+		ClientAction: "Contact support",
+		ServerAction: "Alert; verify Keycloak configuration",
+	}
+
+	KEYCLOAK_HEALTH_ENDPOINT_INVALID = errors.AppError{
+		Key: "KEYCLOAK_HEALTH_ENDPOINT_INVALID",
+		Code: "AUTH-INFRA-006",
+		Status: 502,
+		GRPCCode: "Unavailable",
+		Message: "Invalid Keycloak health endpoint",
+		Severity: "S1",
+		Retryable: true,
+		Cause: "Health check path incorrect or disabled",
+		ClientAction: "Retry later",
+		ServerAction: "Fix health endpoint configuration",
+	}
+
+	KEYCLOAK_INTERNAL = errors.AppError{
+		Key: "KEYCLOAK_INTERNAL",
+		Code: "AUTH-INFRA-007",
+		Status: 500,
+		GRPCCode: "Internal",
+		Message: "Keycloak internal error",
+		Severity: "S1",
+		Retryable: true,
+		Cause: "Keycloak returned 500 during health check or API call",
+		ClientAction: "Retry operation",
+		ServerAction: "Investigate Keycloak logs for root cause",
+	}
+
+	KEYCLOAK_TOKEN_REQUEST_FAIL = errors.AppError{
+		Key: "KEYCLOAK_TOKEN_REQUEST_FAIL",
+		Code: "AUTH-INFRA-008",
+		Status: 503,
+		GRPCCode: "Unavailable",
+		Message: "Failed to request access token",
+		Severity: "S1",
+		Retryable: true,
+		Cause: "Timeout or connection error when requesting token",
+		ClientAction: "Retry with backoff",
+		ServerAction: "Check Keycloak token endpoint",
+	}
+
+	KEYCLOAK_TOKEN_INVALID = errors.AppError{
+		Key: "KEYCLOAK_TOKEN_INVALID",
+		Code: "AUTH-INFRA-009",
+		Status: 401,
+		GRPCCode: "Unauthenticated",
+		Message: "Invalid or expired Keycloak token",
+		Severity: "S2",
+		Retryable: false,
+		Cause: "Token expired or invalid signature",
+		ClientAction: "Refresh token or re-login",
+		ServerAction: "Log info; track invalid token usage",
+	}
+
+	KEYCLOAK_REFRESH_TOKEN_FAIL = errors.AppError{
+		Key: "KEYCLOAK_REFRESH_TOKEN_FAIL",
+		Code: "AUTH-INFRA-010",
+		Status: 503,
+		GRPCCode: "Unavailable",
+		Message: "Failed to refresh token",
+		Severity: "S1",
+		Retryable: true,
+		Cause: "Timeout, 5xx error from Keycloak",
+		ClientAction: "Retry",
+		ServerAction: "Alert if occurs frequently",
+	}
+
+	KEYCLOAK_USER_NOT_FOUND = errors.AppError{
+		Key: "KEYCLOAK_USER_NOT_FOUND",
+		Code: "AUTH-INFRA-011",
+		Status: 404,
+		GRPCCode: "NotFound",
+		Message: "Keycloak user not found",
+		Severity: "S2",
+		Retryable: false,
+		Cause: "Requested user does not exist in Keycloak",
+		ClientAction: "Check user ID",
+		ServerAction: "Log info",
+	}
+
+	KEYCLOAK_USER_CREATE_FAIL = errors.AppError{
+		Key: "KEYCLOAK_USER_CREATE_FAIL",
+		Code: "AUTH-INFRA-012",
+		Status: 503,
+		GRPCCode: "Unavailable",
+		Message: "Failed to create Keycloak user",
+		Severity: "S1",
+		Retryable: true,
+		Cause: "Keycloak returned 5xx during user creation",
+		ClientAction: "Retry",
+		ServerAction: "Alert; check Keycloak user endpoints",
+	}
+
+	KEYCLOAK_USER_UPDATE_FAIL = errors.AppError{
+		Key: "KEYCLOAK_USER_UPDATE_FAIL",
+		Code: "AUTH-INFRA-013",
+		Status: 503,
+		GRPCCode: "Unavailable",
+		Message: "Failed to update Keycloak user",
+		Severity: "S1",
+		Retryable: true,
+		Cause: "5xx or timeout during update",
+		ClientAction: "Retry",
+		ServerAction: "Investigate Keycloak uptime",
+	}
+
+	KEYCLOAK_USER_DELETE_FAIL = errors.AppError{
+		Key: "KEYCLOAK_USER_DELETE_FAIL",
+		Code: "AUTH-INFRA-014",
+		Status: 503,
+		GRPCCode: "Unavailable",
+		Message: "Failed to delete Keycloak user",
+		Severity: "S1",
+		Retryable: true,
+		Cause: "5xx error during delete",
+		ClientAction: "Retry",
+		ServerAction: "Check Keycloak admin API availability",
+	}
+
+	KEYCLOAK_CLIENT_INVALID = errors.AppError{
+		Key: "KEYCLOAK_CLIENT_INVALID",
+		Code: "AUTH-INFRA-015",
+		Status: 400,
+		GRPCCode: "InvalidArgument",
+		Message: "Invalid Keycloak client configuration",
+		Severity: "S2",
+		Retryable: false,
+		Cause: "Client ID/secret mismatched or missing",
+		ClientAction: "Contact support",
+		ServerAction: "Fix client config in Keycloak",
+	}
+
+	KEYCLOAK_REALM_NOT_FOUND = errors.AppError{
+		Key: "KEYCLOAK_REALM_NOT_FOUND",
+		Code: "AUTH-INFRA-016",
+		Status: 404,
+		GRPCCode: "NotFound",
+		Message: "Keycloak realm not found",
+		Severity: "S2",
+		Retryable: false,
+		Cause: "Realm name incorrect",
+		ClientAction: "Verify realm configuration",
+		ServerAction: "Log warn; validate realm list",
+	}
+
+	KEYCLOAK_ROLE_ASSIGN_FAIL = errors.AppError{
+		Key: "KEYCLOAK_ROLE_ASSIGN_FAIL",
+		Code: "AUTH-INFRA-017",
+		Status: 503,
+		GRPCCode: "Unavailable",
+		Message: "Failed to assign Keycloak role",
+		Severity: "S1",
+		Retryable: true,
+		Cause: "Keycloak role mapping API returned 5xx",
+		ClientAction: "Retry",
+		ServerAction: "Investigate Keycloak admin role API",
+	}
+
+	KEYCLOAK_TIMEOUT = errors.AppError{
+		Key: "KEYCLOAK_TIMEOUT",
+		Code: "AUTH-INFRA-018",
+		Status: 504,
+		GRPCCode: "DeadlineExceeded",
+		Message: "Keycloak request timeout",
+		Severity: "S1",
+		Retryable: true,
+		Cause: "Network congestion or slow Keycloak response",
+		ClientAction: "Retry with backoff",
+		ServerAction: "Monitor latency; check Keycloak CPU/memory",
+	}
+
+	KEYCLOAK_BAD_GATEWAY = errors.AppError{
+		Key: "KEYCLOAK_BAD_GATEWAY",
+		Code: "AUTH-INFRA-019",
+		Status: 502,
+		GRPCCode: "Unavailable",
+		Message: "Bad gateway from Keycloak",
+		Severity: "S1",
+		Retryable: true,
+		Cause: "Reverse proxy or Keycloak pod down",
+		ClientAction: "Retry",
+		ServerAction: "Investigate load balancer / ingress",
+	}
+
+	KEYCLOAK_GATEWAY_TIMEOUT = errors.AppError{
+		Key: "KEYCLOAK_GATEWAY_TIMEOUT",
+		Code: "AUTH-INFRA-020",
+		Status: 504,
+		GRPCCode: "DeadlineExceeded",
+		Message: "Gateway timeout communicating with Keycloak",
+		Severity: "S1",
+		Retryable: true,
+		Cause: "Request exceeded ingress/NGINX timeout",
+		ClientAction: "Retry",
+		ServerAction: "Increase gateway timeout or optimize endpoint",
+	}
+
 )
 
-// ErrorByCode maps error codes to their BusinessError definitions
-var ErrorByCode = map[string]errors.BusinessError{
+// ErrorByCode maps error codes to their AppError definitions
+var ErrorByCode = map[string]errors.AppError{
 	"AUTH-VAL-001": LOGIN_EMAIL_EMPTY,
 	"AUTH-VAL-002": LOGIN_EMAIL_INVALID,
 	"AUTH-VAL-003": LOGIN_PASSWORD_EMPTY,
@@ -218,4 +426,20 @@ var ErrorByCode = map[string]errors.BusinessError{
 	"AUTH-INFRA-002": REDIS_UNAVAILABLE,
 	"AUTH-INFRA-003": KEYCLOAK_UNAVAILABLE,
 	"AUTH-INFRA-004": POSTGRES_UNAVAILABLE,
+	"AUTH-INFRA-005": KEYCLOAK_CONFIG_INVALID,
+	"AUTH-INFRA-006": KEYCLOAK_HEALTH_ENDPOINT_INVALID,
+	"AUTH-INFRA-007": KEYCLOAK_INTERNAL,
+	"AUTH-INFRA-008": KEYCLOAK_TOKEN_REQUEST_FAIL,
+	"AUTH-INFRA-009": KEYCLOAK_TOKEN_INVALID,
+	"AUTH-INFRA-010": KEYCLOAK_REFRESH_TOKEN_FAIL,
+	"AUTH-INFRA-011": KEYCLOAK_USER_NOT_FOUND,
+	"AUTH-INFRA-012": KEYCLOAK_USER_CREATE_FAIL,
+	"AUTH-INFRA-013": KEYCLOAK_USER_UPDATE_FAIL,
+	"AUTH-INFRA-014": KEYCLOAK_USER_DELETE_FAIL,
+	"AUTH-INFRA-015": KEYCLOAK_CLIENT_INVALID,
+	"AUTH-INFRA-016": KEYCLOAK_REALM_NOT_FOUND,
+	"AUTH-INFRA-017": KEYCLOAK_ROLE_ASSIGN_FAIL,
+	"AUTH-INFRA-018": KEYCLOAK_TIMEOUT,
+	"AUTH-INFRA-019": KEYCLOAK_BAD_GATEWAY,
+	"AUTH-INFRA-020": KEYCLOAK_GATEWAY_TIMEOUT,
 }

@@ -4,7 +4,7 @@ package domain
 import "server/pkg/errors"
 
 var (
-	EMPLOYEE_NOT_FOUND = errors.BusinessError{
+	EMPLOYEE_NOT_FOUND = errors.AppError{
 		Key: "EMPLOYEE_NOT_FOUND",
 		Code: "HR-EMP-001",
 		Status: 404,
@@ -17,7 +17,7 @@ var (
 		ServerAction: "Log info; monitor invalid access attempts",
 	}
 
-	PAYROLL_PROCESS_FAIL = errors.BusinessError{
+	PAYROLL_PROCESS_FAIL = errors.AppError{
 		Key: "PAYROLL_PROCESS_FAIL",
 		Code: "HR-PAY-001",
 		Status: 500,
@@ -30,7 +30,7 @@ var (
 		ServerAction: "Alert finance ops; investigate DB/services",
 	}
 
-	LEAVE_REQUEST_INVALID = errors.BusinessError{
+	LEAVE_REQUEST_INVALID = errors.AppError{
 		Key: "LEAVE_REQUEST_INVALID",
 		Code: "HR-LEAVE-001",
 		Status: 400,
@@ -45,8 +45,8 @@ var (
 
 )
 
-// ErrorByCode maps error codes to their BusinessError definitions
-var ErrorByCode = map[string]errors.BusinessError{
+// ErrorByCode maps error codes to their AppError definitions
+var ErrorByCode = map[string]errors.AppError{
 	"HR-EMP-001": EMPLOYEE_NOT_FOUND,
 	"HR-PAY-001": PAYROLL_PROCESS_FAIL,
 	"HR-LEAVE-001": LEAVE_REQUEST_INVALID,

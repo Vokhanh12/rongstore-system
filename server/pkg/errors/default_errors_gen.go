@@ -2,7 +2,7 @@
 package errors
 
 var (
-	UNKNOWN_DOMAIN_KEY = BusinessError{
+	UNKNOWN_DOMAIN_KEY = AppError{
 		Key: "UNKNOWN_DOMAIN_KEY",
 		Code: "AUTH-VAL-999",
 		Status: 400,
@@ -12,7 +12,7 @@ var (
 		Retryable: false,
 	}
 
-	INTERNAL_FALLBACK = BusinessError{
+	INTERNAL_FALLBACK = AppError{
 		Key: "INTERNAL_FALLBACK",
 		Code: "CORE-INF-000",
 		Status: 500,
@@ -24,8 +24,8 @@ var (
 
 )
 
-// ErrorByCode maps default error codes to their BusinessError definitions
-var ErrorByCode = map[string]BusinessError{
+// ErrorByCode maps default error codes to their AppError definitions
+var ErrorByCode = map[string]AppError{
 	"AUTH-VAL-999": UNKNOWN_DOMAIN_KEY,
 	"CORE-INF-000": INTERNAL_FALLBACK,
 }

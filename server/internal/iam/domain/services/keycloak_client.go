@@ -23,10 +23,33 @@ type Permission struct {
 	Scopes []string `json:"scopes"`
 }
 
+type IntrospectionResult struct {
+	Active    bool   `json:"active"`
+	Scope     string `json:"scope"`
+	Username  string `json:"username"`
+	TokenType string `json:"token_type"`
+	Exp       int64  `json:"exp"`
+	Iat       int64  `json:"iat"`
+	Nbf       int64  `json:"nbf"`
+	Sub       string `json:"sub"`
+	Aud       string `json:"aud"`
+	Iss       string `json:"iss"`
+	Jti       string `json:"jti"`
+}
+
 type Keycloak interface {
+	// AUTHENTICATION
 	GetToken(ctx context.Context, username, password string) (*Token, *errors.BusinessError)
 	RefreshToken(ctx context.Context, refreshToken string) (*Token, *errors.BusinessError)
-	CheckHealth(ctx context.Context) *errors.BusinessError
+	Logout(ctx context.Context, refreshToken string) *errors.BusinessError
+
+	// TOKEN UTILITIES
+	IntrospectToken(ctx context.Context, token string) (*IntrospectionResult, *errors.BusinessError)
+
+	// AUTHORIZATION (OPTIONAL)
+	GetUserPermissions(ctx context.Context, accessToken string) ([]Permission, *errors.BusinessError)
+
+	// SERVICE HEALTH
+	CheckHealth(ctx context.Context) error
 	GetBaseURL() string
-	//GetUserPermissions(ctx context.Context, accessToken string) ([]Permission, *errors.BusinessError)
 }

@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"server/internal/iam/domain/services"
 	sv "server/internal/iam/domain/services"
 	"server/pkg/config"
 	"server/pkg/logger"
@@ -15,21 +14,23 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type RedisSessionStore struct {
+var _ sv.IRedisCache = (*RedisCache)(nil)
+
+type RedisCache struct {
 	rdb *redis.Client
 	ttl time.Duration
 }
 
-func InitRedisSessionStore(ctx context.Context, cfg *config.Config, infbe services.BusinessError) sv.RedisSessionStore {
+func InitRedis(ctx context.Context, cfg *config.Config) sv.IRedisCache {
 	maxRetries := cfg.MaxRetries
 	interval := time.Duration(cfg.Interval) * time.Second
 
 	for i := 0; i < maxRetries; i++ {
-		rdb := newRedisClient(cfg)
+		rdb := newRedisCache(cfg)
 
 		err := pingRedis(rdb)
 		if err == nil {
-			return &RedisSessionStore{
+			return &RedisCache{
 				rdb: rdb,
 				ttl: RedisTTLFromConfig(cfg),
 			}
@@ -52,7 +53,7 @@ func InitRedisSessionStore(ctx context.Context, cfg *config.Config, infbe servic
 	return nil
 }
 
-func newRedisClient(cfg *config.Config) *redis.Client {
+func newRedisCache(cfg *config.Config) *redis.Client {
 	addr := fmt.Sprintf("%s:%d", cfg.RedisHost, cfg.RedisPort)
 	return redis.NewClient(&redis.Options{
 		Addr:     addr,
@@ -82,7 +83,7 @@ func sessionKey(sessionID string) string {
 	return "session:" + sessionID
 }
 
-func (r *RedisSessionStore) StoreSession(ctx context.Context, e *sv.SessionEntry) error {
+func (r *RedisCache) StoreSession(ctx context.Context, e *sv.SessionEntry) error {
 	key := sessionKey(e.SessionID)
 	fields := map[string]interface{}{
 		"client_pub": base64.StdEncoding.EncodeToString(e.ClientPub),
@@ -99,7 +100,7 @@ func (r *RedisSessionStore) StoreSession(ctx context.Context, e *sv.SessionEntry
 	return r.rdb.Expire(ctx, key, r.ttl).Err()
 }
 
-func (r *RedisSessionStore) GetSession(ctx context.Context, sessionID string) (*sv.SessionEntry, error) {
+func (r *RedisCache) GetSession(ctx context.Context, sessionID string) (*sv.SessionEntry, error) {
 	key := sessionKey(sessionID)
 	m, err := r.rdb.HGetAll(ctx, key).Result()
 	if err != nil || len(m) == 0 {
@@ -138,12 +139,12 @@ func (r *RedisSessionStore) GetSession(ctx context.Context, sessionID string) (*
 	}, nil
 }
 
-func (r *RedisSessionStore) DeleteSession(ctx context.Context, sessionID string) error {
+func (r *RedisCache) DeleteSession(ctx context.Context, sessionID string) error {
 	key := sessionKey(sessionID)
 	return r.rdb.Del(ctx, key).Err()
 }
 
-func (r *RedisSessionStore) CheckAndRecordNonceAtomic(ctx context.Context, sessionID, nonceB64 string, windowSeconds int) (bool, error) {
+func (r *RedisCache) CheckAndRecordNonceAtomic(ctx context.Context, sessionID, nonceB64 string, windowSeconds int) (bool, error) {
 	nonceKey := sessionKey(sessionID) + ":nonce:" + nonceB64
 	return r.rdb.SetNX(ctx, nonceKey, "1", time.Duration(windowSeconds)*time.Second).Result()
 }

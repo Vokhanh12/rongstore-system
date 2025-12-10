@@ -65,6 +65,7 @@ func (u *LoginUsecase) Execute(ctx context.Context, cmd LoginCommand) (*LoginRes
 	}
 
 	token, err := u.Keycloak.GetToken(ctx, cmd.Email, cmd.Password)
+	
 	if err != nil {
 		if strings.Contains(err.Error(), "invalid_grant") || strings.Contains(err.Error(), "invalid_credentials") {
 			return nil, errors.NewBusinessError(domain.INVALID_CREDENTIALS)

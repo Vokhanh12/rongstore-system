@@ -186,6 +186,182 @@ services:
         client_action: "Retry operation after delay"
         server_action: "Alert; verify Postgres server health"
 
+      - code: AUTH-INFRA-005
+        key: KEYCLOAK_CONFIG_INVALID
+        http_status: 500
+        grpc_code: Internal
+        message: "Invalid Keycloak configuration"
+        severity: S1
+        retryable: false
+        cause: "Keycloak URL/credentials/realm invalid"
+        client_action: "Contact support"
+        server_action: "Alert; verify Keycloak configuration"
+
+      - code: AUTH-INFRA-006
+        key: KEYCLOAK_HEALTH_ENDPOINT_INVALID
+        http_status: 502
+        grpc_code: Unavailable
+        message: "Invalid Keycloak health endpoint"
+        severity: S1
+        retryable: true
+        cause: "Health check path incorrect or disabled"
+        client_action: "Retry later"
+        server_action: "Fix health endpoint configuration"
+
+      - code: AUTH-INFRA-007
+        key: KEYCLOAK_INTERNAL
+        http_status: 500
+        grpc_code: Internal
+        message: "Keycloak internal error"
+        severity: S1
+        retryable: true
+        cause: "Keycloak returned 500 during health check or API call"
+        client_action: "Retry operation"
+        server_action: "Investigate Keycloak logs for root cause"
+
+      - code: AUTH-INFRA-008
+        key: KEYCLOAK_TOKEN_REQUEST_FAIL
+        http_status: 503
+        grpc_code: Unavailable
+        message: "Failed to request access token"
+        severity: S1
+        retryable: true
+        cause: "Timeout or connection error when requesting token"
+        client_action: "Retry with backoff"
+        server_action: "Check Keycloak token endpoint"
+
+      - code: AUTH-INFRA-009
+        key: KEYCLOAK_TOKEN_INVALID
+        http_status: 401
+        grpc_code: Unauthenticated
+        message: "Invalid or expired Keycloak token"
+        severity: S2
+        retryable: false
+        cause: "Token expired or invalid signature"
+        client_action: "Refresh token or re-login"
+        server_action: "Log info; track invalid token usage"
+
+      - code: AUTH-INFRA-010
+        key: KEYCLOAK_REFRESH_TOKEN_FAIL
+        http_status: 503
+        grpc_code: Unavailable
+        message: "Failed to refresh token"
+        severity: S1
+        retryable: true
+        cause: "Timeout, 5xx error from Keycloak"
+        client_action: "Retry"
+        server_action: "Alert if occurs frequently"
+
+      - code: AUTH-INFRA-011
+        key: KEYCLOAK_USER_NOT_FOUND
+        http_status: 404
+        grpc_code: NotFound
+        message: "Keycloak user not found"
+        severity: S2
+        retryable: false
+        cause: "Requested user does not exist in Keycloak"
+        client_action: "Check user ID"
+        server_action: "Log info"
+
+      - code: AUTH-INFRA-012
+        key: KEYCLOAK_USER_CREATE_FAIL
+        http_status: 503
+        grpc_code: Unavailable
+        message: "Failed to create Keycloak user"
+        severity: S1
+        retryable: true
+        cause: "Keycloak returned 5xx during user creation"
+        client_action: "Retry"
+        server_action: "Alert; check Keycloak user endpoints"
+
+      - code: AUTH-INFRA-013
+        key: KEYCLOAK_USER_UPDATE_FAIL
+        http_status: 503
+        grpc_code: Unavailable
+        message: "Failed to update Keycloak user"
+        severity: S1
+        retryable: true
+        cause: "5xx or timeout during update"
+        client_action: "Retry"
+        server_action: "Investigate Keycloak uptime"
+
+      - code: AUTH-INFRA-014
+        key: KEYCLOAK_USER_DELETE_FAIL
+        http_status: 503
+        grpc_code: Unavailable
+        message: "Failed to delete Keycloak user"
+        severity: S1
+        retryable: true
+        cause: "5xx error during delete"
+        client_action: "Retry"
+        server_action: "Check Keycloak admin API availability"
+
+      - code: AUTH-INFRA-015
+        key: KEYCLOAK_CLIENT_INVALID
+        http_status: 400
+        grpc_code: InvalidArgument
+        message: "Invalid Keycloak client configuration"
+        severity: S2
+        retryable: false
+        cause: "Client ID/secret mismatched or missing"
+        client_action: "Contact support"
+        server_action: "Fix client config in Keycloak"
+
+      - code: AUTH-INFRA-016
+        key: KEYCLOAK_REALM_NOT_FOUND
+        http_status: 404
+        grpc_code: NotFound
+        message: "Keycloak realm not found"
+        severity: S2
+        retryable: false
+        cause: "Realm name incorrect"
+        client_action: "Verify realm configuration"
+        server_action: "Log warn; validate realm list"
+
+      - code: AUTH-INFRA-017
+        key: KEYCLOAK_ROLE_ASSIGN_FAIL
+        http_status: 503
+        grpc_code: Unavailable
+        message: "Failed to assign Keycloak role"
+        severity: S1
+        retryable: true
+        cause: "Keycloak role mapping API returned 5xx"
+        client_action: "Retry"
+        server_action: "Investigate Keycloak admin role API"
+
+      - code: AUTH-INFRA-018
+        key: KEYCLOAK_TIMEOUT
+        http_status: 504
+        grpc_code: DeadlineExceeded
+        message: "Keycloak request timeout"
+        severity: S1
+        retryable: true
+        cause: "Network congestion or slow Keycloak response"
+        client_action: "Retry with backoff"
+        server_action: "Monitor latency; check Keycloak CPU/memory"
+
+      - code: AUTH-INFRA-019
+        key: KEYCLOAK_BAD_GATEWAY
+        http_status: 502
+        grpc_code: Unavailable
+        message: "Bad gateway from Keycloak"
+        severity: S1
+        retryable: true
+        cause: "Reverse proxy or Keycloak pod down"
+        client_action: "Retry"
+        server_action: "Investigate load balancer / ingress"
+
+      - code: AUTH-INFRA-020
+        key: KEYCLOAK_GATEWAY_TIMEOUT
+        http_status: 504
+        grpc_code: DeadlineExceeded
+        message: "Gateway timeout communicating with Keycloak"
+        severity: S1
+        retryable: true
+        cause: "Request exceeded ingress/NGINX timeout"
+        client_action: "Retry"
+        server_action: "Increase gateway timeout or optimize endpoint"
+
   hr:
     conventions:
       code_format: "<DOMAIN>-<AREA>-<NNN>"

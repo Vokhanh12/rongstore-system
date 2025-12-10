@@ -27,7 +27,7 @@ error_keys=()
 while IFS="|" read -r key code status grpc_code message severity retryable cause client_action server_action; do
     error_keys+=("$key:$code")
     {
-        echo -e "\t${key} = errors.BusinessError{"
+        echo -e "\t${key} = errors.AppError{"
         echo -e "\t\tKey: \"$key\","
         echo -e "\t\tCode: \"$code\","
         echo -e "\t\tStatus: $status,"
@@ -50,8 +50,8 @@ echo ")" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # --- Tạo map ErrorByCode ---
-echo "// ErrorByCode maps error codes to their BusinessError definitions" >> "$OUTPUT_FILE"
-echo "var ErrorByCode = map[string]errors.BusinessError{" >> "$OUTPUT_FILE"
+echo "// ErrorByCode maps error codes to their AppError definitions" >> "$OUTPUT_FILE"
+echo "var ErrorByCode = map[string]errors.AppError{" >> "$OUTPUT_FILE"
 for pair in "${error_keys[@]}"; do
     key="${pair%%:*}"
     code="${pair##*:}"
@@ -85,7 +85,7 @@ to_entries[] | "\(.key)|\(.value.code)|\(.value.http_status)|\(.value.grpc_code)
 while IFS="|" read -r key code status grpc_code message severity retryable cause client_action server_action; do
     default_keys+=("$key:$code")
     {
-        echo -e "\t$key = BusinessError{"
+        echo -e "\t$key = AppError{"
         echo -e "\t\tKey: \"$key\","
         echo -e "\t\tCode: \"$code\","
         echo -e "\t\tStatus: $status,"
@@ -101,8 +101,8 @@ echo ")" >> "$OUTPUT_DEFAULT_FILE"
 echo "" >> "$OUTPUT_DEFAULT_FILE"
 
 # --- Tạo map ErrorByCode ---
-echo "// ErrorByCode maps default error codes to their BusinessError definitions" >> "$OUTPUT_DEFAULT_FILE"
-echo "var ErrorByCode = map[string]BusinessError{" >> "$OUTPUT_DEFAULT_FILE"
+echo "// ErrorByCode maps default error codes to their AppError definitions" >> "$OUTPUT_DEFAULT_FILE"
+echo "var ErrorByCode = map[string]AppError{" >> "$OUTPUT_DEFAULT_FILE"
 for pair in "${default_keys[@]}"; do
     key="${pair%%:*}"
     code="${pair##*:}"

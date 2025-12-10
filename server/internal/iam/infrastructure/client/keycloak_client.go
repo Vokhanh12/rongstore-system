@@ -11,21 +11,20 @@ import (
 	"time"
 
 	domain_errors "server/internal/iam/domain"
-	"server/internal/iam/domain/services"
 	sv "server/internal/iam/domain/services"
 	"server/pkg/config"
 	"server/pkg/errors"
 	"server/pkg/logger"
+	"server/pkg/trace"
 )
 
 var _ sv.Keycloak = (*KeycloakClient)(nil)
 
 type KeycloakClient struct {
-	BaseURL       string
-	Client        *http.Client
-	Config        *config.Config
-	Health        string
-	businessError services.BusinessError
+	BaseURL string
+	Client  *http.Client
+	Config  *config.Config
+	Health  string
 }
 
 // func (kc *KeycloakClient) GetUserPermissions(ctx context.Context, accessToken string) ([]sv.Permission, *errors.BusinessError) {
@@ -50,17 +49,19 @@ type KeycloakClient struct {
 
 // }
 
-func InitKeycloakClient(ctx context.Context, cfg *config.Config, infbe services.BusinessError) sv.Keycloak {
+func InitKeycloakClient(ctx context.Context, cfg *config.Config) sv.Keycloak {
 	maxRetries := cfg.MaxRetries
 	interval := time.Duration(cfg.Interval) * time.Second
 
 	kc := NewKeycloakClient(cfg, infbe)
 
 	for i := 0; i < maxRetries; i++ {
-		if err := kc.CheckHealth(ctx); err == nil {
+		if err := kc.CheckHealth(ctx); err != nil {
 			return kc
 		} else {
+
 			fields := map[string]interface{}{
+				"trace_id":  trace.NewTraceID(),
 				"retry":     i + 1,
 				"max_retry": maxRetries,
 				"operation": "init.keycloak.client",
@@ -76,7 +77,6 @@ func InitKeycloakClient(ctx context.Context, cfg *config.Config, infbe services.
 		time.Sleep(interval * time.Duration(1<<i))
 	}
 
-	// Nếu tất cả retry thất bại, panic hoặc trả error tùy policy
 	be := domain_errors.KEYCLOAK_UNAVAILABLE
 	panic(fmt.Sprintf(
 		"PANIC: [%s][%s] %s | cause: %s | server_action: %s | retryable: %v",
@@ -89,13 +89,12 @@ func InitKeycloakClient(ctx context.Context, cfg *config.Config, infbe services.
 	))
 }
 
-func NewKeycloakClient(cfg *config.Config, businessError services.BusinessError) sv.Keycloak {
+func NewKeycloakClient(cfg *config.Config) sv.Keycloak {
 	return &KeycloakClient{
-		BaseURL:       cfg.KeycloakURL,
-		Client:        &http.Client{Timeout: 5 * time.Second},
-		Config:        cfg,
-		Health:        cfg.KeycloakServerHealth,
-		businessError: businessError,
+		BaseURL: cfg.KeycloakURL,
+		Client:  &http.Client{Timeout: 5 * time.Second},
+		Config:  cfg,
+		Health:  cfg.KeycloakServerHealth,
 	}
 }
 
@@ -103,21 +102,40 @@ func (kc *KeycloakClient) GetBaseURL() string {
 	return kc.BaseURL
 }
 
-func (kc *KeycloakClient) CheckHealth(ctx context.Context) *errors.BusinessError {
+func (kc *KeycloakClient) CheckHealth(ctx context.Context) error {
 	resp, err := kc.Client.Get(kc.Health)
+
 	if err != nil {
-		logger.LogInfraDebug(ctx, err, "", map[string]interface{}{})
+		fields := map[string]interface{}{
+			"trace_id":  trace.NewTraceID(),
+			"operation": "keycloak.checkhealth",
+		}
+		logger.LogBySeverity(ctx, err, fields)
 		return errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		logger.LogInfraDebug(ctx, err, "", map[string]interface{}{})
+	switch resp.StatusCode {
+
+	case http.StatusOK:
+		return nil
+
+	case http.StatusUnauthorized, http.StatusForbidden:
+		return errors.Clone(domain_errors.KEYCLOAK_CONFIG_INVALID)
+
+	case http.StatusNotFound:
+		return errors.Clone(domain_errors.KEYCLOAK_HEALTH_ENDPOINT_INVALID)
+
+	case http.StatusInternalServerError:
+		return errors.Clone(domain_errors.KEYCLOAK_INTERNAL)
+
+	case http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+		return errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
+
+	default:
 		return errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
-
-	return nil
 }
 
 func (kc *KeycloakClient) tokenEndpoint() string {

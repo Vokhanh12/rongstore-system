@@ -39,11 +39,15 @@ func InitGormPostgresDB(ctx context.Context, cfg *config.Config) *gorm.DB {
 		fields := map[string]interface{}{
 			"retry":     i + 1,
 			"operation": "init.gorm.postgres",
-			"error":     err.Error(),
 		}
 
-		logger.LogBySeverity(ctx, err, fields)
-		time.Sleep(interval)
+		if i < maxRetries-1 {
+			logger.LogInfraDebug(ctx, err, "", fields)
+		} else {
+			logger.LogBySeverity(ctx, err, fields)
+		}
+
+		time.Sleep(interval * time.Duration(1<<i))
 	}
 
 	be := domain_errors.POSTGRES_UNAVAILABLE
