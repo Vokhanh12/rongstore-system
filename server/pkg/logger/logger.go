@@ -14,6 +14,14 @@ var (
 	SecurityLogger   *zap.Logger
 )
 
+type BaseLogger struct {
+	Service  string
+	TraceId  string
+	UserId   string
+	ClientId string
+	RealmId  string
+}
+
 func Init() error {
 	encoderCfg := zapcore.EncoderConfig{TimeKey: "ts", LevelKey: "level", NameKey: "logger", CallerKey: "caller", MessageKey: "msg", StacktraceKey: "stack", LineEnding: zapcore.DefaultLineEnding, EncodeLevel: zapcore.LowercaseLevelEncoder, EncodeTime: zapcore.ISO8601TimeEncoder, EncodeDuration: zapcore.SecondsDurationEncoder, EncodeCaller: zapcore.ShortCallerEncoder}
 	encoder := zapcore.NewConsoleEncoder(encoderCfg)

@@ -9,6 +9,8 @@ const (
 	ctxKeySessionID ctxKey = "session_id"
 	ctxKeyUserID    ctxKey = "user_id"
 	ctxKeyRequestID ctxKey = "request_id"
+	ctxKeyClientId  ctxKey = "client_id"
+	ctxKeyRealmId   ctxKey = "realm_id"
 )
 
 func WithTraceID(ctx context.Context, traceID string) context.Context {
@@ -30,6 +32,20 @@ func RequestIdFromContext(ctx context.Context) string {
 }
 
 func TraceIDFromContext(ctx context.Context) string {
+	if v, ok := ctx.Value(ctxKeyTraceID).(string); ok {
+		return v
+	}
+	return ""
+}
+
+func ClientIDFromContext(ctx context.Context) string {
+	if v, ok := ctx.Value(ctxKeyTraceID).(string); ok {
+		return v
+	}
+	return ""
+}
+
+func RealmIDFromContext(ctx context.Context) string {
 	if v, ok := ctx.Value(ctxKeyTraceID).(string); ok {
 		return v
 	}

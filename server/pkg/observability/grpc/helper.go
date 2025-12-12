@@ -22,10 +22,3 @@ func peerIP(ctx context.Context) string {
 	}
 	return ""
 }
-
-func statusLabel(err error) string {
-	if err == nil {
-		return "OK"
-	}
-	return "Error"
-}

@@ -111,7 +111,7 @@ func (kc *KeycloakClient) CheckHealth(ctx context.Context) error {
 			"operation": "keycloak.checkhealth",
 		}
 		logger.LogBySeverity(ctx, err, fields)
-		return errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
+		return errors.New(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
 
 	defer resp.Body.Close()
@@ -122,19 +122,19 @@ func (kc *KeycloakClient) CheckHealth(ctx context.Context) error {
 		return nil
 
 	case http.StatusUnauthorized, http.StatusForbidden:
-		return errors.Clone(domain_errors.KEYCLOAK_CONFIG_INVALID)
+		return errors.New(domain_errors.KEYCLOAK_CONFIG_INVALID)
 
 	case http.StatusNotFound:
-		return errors.Clone(domain_errors.KEYCLOAK_HEALTH_ENDPOINT_INVALID)
+		return errors.New(domain_errors.KEYCLOAK_HEALTH_ENDPOINT_INVALID)
 
 	case http.StatusInternalServerError:
-		return errors.Clone(domain_errors.KEYCLOAK_INTERNAL)
+		return errors.New(domain_errors.KEYCLOAK_INTERNAL)
 
 	case http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
-		return errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
+		return errors.New(domain_errors.KEYCLOAK_UNAVAILABLE)
 
 	default:
-		return errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
+		return errors.New(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
 }
 

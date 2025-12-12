@@ -10,26 +10,34 @@ import (
 	"google.golang.org/grpc"
 )
 
-func LoggingUnaryInterceptor(serviceName string) grpc.UnaryServerInterceptor {
+func LoggingUnaryInterceptor(service string) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		start := time.Now()
 		resp, err := handler(ctx, req)
 		duration := time.Since(start).Milliseconds()
 
-		traceID := ctxutil.TraceIDFromContext(ctx)
+		traceId := ctxutil.TraceIDFromContext(ctx)
+		userId := ctxutil.UserIDFromContext(ctx)
+		clientId := ctxutil.ClientIDFromContext(ctx)
+		realmId := ctxutil.RealmIDFromContext(ctx)
 		ip := peerIP(ctx)
-		handlerName := simplifyMethod(info.FullMethod)
 
-		logger.LogAccess(ctx, logger.AccessParams{
-			Service:   serviceName,
-			Handler:   handlerName,
-			Method:    info.FullMethod,
+		msg := simplifyMethod(info.FullMethod)
+
+		logger.LogAccess(ctx, msg, logger.AccessParams{
+			Base: logger.BaseLogger{
+				Service:  service,
+				TraceId:  traceId,
+				UserId:   userId,
+				ClientId: clientId,
+				RealmId:  realmId,
+			},
+			Path:      info.FullMethod,
+			Method:    "POST",
 			LatencyMS: duration,
 			IP:        ip,
-			Status:    statusLabel(err),
-			Extra: map[string]interface{}{
-				"trace_id": traceID,
-			},
+			HTTPCode:  200,
+			UserAgent: "",
 		})
 
 		return resp, err
