@@ -39,15 +39,15 @@ type IntrospectionResult struct {
 
 type Keycloak interface {
 	// AUTHENTICATION
-	GetToken(ctx context.Context, username, password string) (*Token, *errors.BusinessError)
-	RefreshToken(ctx context.Context, refreshToken string) (*Token, *errors.BusinessError)
-	Logout(ctx context.Context, refreshToken string) *errors.BusinessError
+	GetToken(ctx context.Context, username, password string) (*Token, *errors.AppError)
+	RefreshToken(ctx context.Context, refreshToken string) (*Token, *errors.AppError)
+	Logout(ctx context.Context, refreshToken string) *errors.AppError
 
 	// TOKEN UTILITIES
-	IntrospectToken(ctx context.Context, token string) (*IntrospectionResult, *errors.BusinessError)
+	IntrospectToken(ctx context.Context, token string) (*IntrospectionResult, *errors.AppError)
 
 	// AUTHORIZATION (OPTIONAL)
-	GetUserPermissions(ctx context.Context, accessToken string) ([]Permission, *errors.BusinessError)
+	GetUserPermissions(ctx context.Context, accessToken string) ([]Permission, *errors.AppError)
 
 	// SERVICE HEALTH
 	CheckHealth(ctx context.Context) error

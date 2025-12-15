@@ -22,6 +22,18 @@ type BaseLogger struct {
 	RealmId  string
 }
 
+type BaseLogLevel struct {
+	Code         string `json:"code"`
+	Key          string `json:"key"`
+	HTTPStatus   string `json:"http_status"`
+	GRPCCode     string `json:"grpc_code"`
+	Message      string `json:"message"`
+	Cause        string `json:"cause"`
+	CauseDetail  string `json:"cause_detail"`
+	ClientAction string `json:"client_action"`
+	ServerAction string `json:"server_action"`
+}
+
 func Init() error {
 	encoderCfg := zapcore.EncoderConfig{TimeKey: "ts", LevelKey: "level", NameKey: "logger", CallerKey: "caller", MessageKey: "msg", StacktraceKey: "stack", LineEnding: zapcore.DefaultLineEnding, EncodeLevel: zapcore.LowercaseLevelEncoder, EncodeTime: zapcore.ISO8601TimeEncoder, EncodeDuration: zapcore.SecondsDurationEncoder, EncodeCaller: zapcore.ShortCallerEncoder}
 	encoder := zapcore.NewConsoleEncoder(encoderCfg)

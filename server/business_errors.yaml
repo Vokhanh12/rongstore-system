@@ -1,12 +1,29 @@
 version: 1
 updated_at: "2025-08-17"
 owner: platform-auth
-
+# ------------------------------------------------------------
+# Observability Convention
+#
+# Severity   Expected   Log level
+# S1         false      ERROR
+# S2         false      WARN
+# S2         true       INFO
+# S3         true       INFO / DEBUG
+#
+# Rules:
+# - S1 is always unexpected
+# - S3 is always expected
+# - S2 MUST declare expected
+# ------------------------------------------------------------
 services:
   iam:
     conventions:
       code_format: "<DOMAIN>-<AREA>-<NNN>"
       domain: "AUTH"
+      # Severity mapping:
+      # S1 → ERROR
+      # S2 → WARN | INFO (depends on expected)
+      # S3 → INFO | DEBUG
       severity_scale:
         S1: "Critical outage/security risk"
         S2: "Degraded experience or important failure"

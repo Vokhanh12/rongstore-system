@@ -16,6 +16,12 @@ func WithData(data map[string]interface{}) func(*AppError) {
 	return func(e *AppError) { e.Data = data }
 }
 
+func SetError(err error) func(*AppError) {
+	return func(e *AppError) {
+		e.causeDetail = err
+	}
+}
+
 func copy(src AppError) *AppError {
 	dst := src
 	if src.Data != nil {

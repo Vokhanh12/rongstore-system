@@ -174,7 +174,7 @@ func (kc *KeycloakClient) doFormRequest(
 func (kc *KeycloakClient) GetToken(
 	ctx context.Context,
 	username, password string,
-) (*sv.Token, *errors.BusinessError) {
+) (*sv.Token, *errors.AppError) {
 
 	form := url.Values{}
 	form.Set("grant_type", "password")
@@ -186,7 +186,9 @@ func (kc *KeycloakClient) GetToken(
 
 	respBody, status, err := kc.doFormRequest(ctx, form)
 	if err != nil {
-		return nil, errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
+		return nil, errors.New(
+			domain_errors.KEYCLOAK_UNAVAILABLE,
+			errors.SetError(err))
 	}
 
 	if status != http.StatusOK {
@@ -195,11 +197,13 @@ func (kc *KeycloakClient) GetToken(
 
 	var token sv.Token
 	if err := json.Unmarshal(respBody, &token); err != nil {
-		return nil, errors.Clone(errors.INTERNAL_FALLBACK)
+		return nil, errors.New(
+			errors.INTERNAL_FALLBACK,
+			errors.SetError(err))
 	}
 
 	if token.AccessToken == "" {
-		return nil, errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
+		return nil, errors.New(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
 
 	return &token, nil

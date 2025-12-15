@@ -11,7 +11,6 @@ import (
 	"strings"
 )
 
-// --- Command & Result (trước đây ở package commands) ---
 type LoginCommand struct {
 	Email    string
 	Password string
@@ -22,7 +21,6 @@ type LoginResult struct {
 	RefreshToken string
 }
 
-// --- Mapper (trước đây ở package mappers) ---
 func MapLoginRequestToCommand(req *iamv1.LoginRequest) LoginCommand {
 	return LoginCommand{
 		Email:    req.Email,
@@ -37,7 +35,6 @@ func MapLoginResultToResponseDTO(result *LoginResult) iamv1.LoginResponse {
 	}
 }
 
-// --- Usecase (trước đây ở package usecases) ---
 type LoginUsecase struct {
 	UserRepo rp.UserRepository
 	Keycloak sv.Keycloak
@@ -50,25 +47,25 @@ func NewLoginUsecase(repo rp.UserRepository, kcl sv.Keycloak) *LoginUsecase {
 	}
 }
 
-func (u *LoginUsecase) Execute(ctx context.Context, cmd LoginCommand) (*LoginResult, error) {
+func (u *LoginUsecase) Execute(ctx context.Context, cmd LoginCommand) (*LoginResult, *errors.AppError) {
 	if cmd.Email == "" {
-		return nil, errors.NewBusinessError(domain.LOGIN_EMAIL_EMPTY)
+		return nil, errors.New(domain.LOGIN_EMAIL_EMPTY)
 	}
 
 	emailRegex := `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
 	if matched, _ := regexp.MatchString(emailRegex, cmd.Email); !matched {
-		return nil, errors.NewBusinessError(domain.LOGIN_EMAIL_INVALID)
+		return nil, errors.New(domain.LOGIN_EMAIL_INVALID)
 	}
 
 	if cmd.Password == "" {
-		return nil, errors.NewBusinessError(domain.LOGIN_PASSWORD_EMPTY)
+		return nil, errors.New(domain.LOGIN_PASSWORD_EMPTY)
 	}
 
 	token, err := u.Keycloak.GetToken(ctx, cmd.Email, cmd.Password)
-	
+
 	if err != nil {
 		if strings.Contains(err.Error(), "invalid_grant") || strings.Contains(err.Error(), "invalid_credentials") {
-			return nil, errors.NewBusinessError(domain.INVALID_CREDENTIALS)
+			return nil, errors.New(domain.INVALID_CREDENTIALS)
 		}
 		return nil, err
 	}

@@ -14,6 +14,7 @@ type AppError struct {
 	Data         map[string]interface{} `json:"data,omitempty"`
 	Severity     string                 `json:"severity,omitempty"`
 	Retryable    bool                   `json:"retryable,omitempty"`
+	causeDetail  error
 }
 
 func (e *AppError) Error() string {
