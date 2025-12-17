@@ -13,6 +13,7 @@ type AppError struct {
 	Message      string                 `json:"message"`
 	Data         map[string]interface{} `json:"data,omitempty"`
 	Severity     string                 `json:"severity,omitempty"`
+	Expected     bool                   `json:"expected,omitempty"`
 	Retryable    bool                   `json:"retryable,omitempty"`
 	causeDetail  error
 }

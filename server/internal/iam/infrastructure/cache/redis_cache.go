@@ -7,8 +7,10 @@ import (
 	"strconv"
 	"time"
 
+	"server/internal/iam/domain"
 	sv "server/internal/iam/domain/services"
 	"server/pkg/config"
+	"server/pkg/errors"
 	"server/pkg/logger"
 
 	"github.com/redis/go-redis/v9"
@@ -42,7 +44,7 @@ func InitRedis(ctx context.Context, cfg *config.Config) sv.IRedisCache {
 		}
 
 		if i < maxRetries-1 {
-			logger.LogInfraDebug(ctx, err, "", fields)
+			//logger.LogInfraDebug(ctx, err, "", fields)
 		} else {
 			logger.LogBySeverity(ctx, err, fields)
 		}
@@ -62,10 +64,16 @@ func newRedisCache(cfg *config.Config) *redis.Client {
 	})
 }
 
-func pingRedis(rdb *redis.Client) error {
+func pingRedis(rdb *redis.Client) *errors.AppError {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	return rdb.Ping(ctx).Err()
+
+	err := rdb.Ping(ctx).Err()
+	if err != nil {
+		return errors.New(domain.REDIS_UNAVAILABLE, errors.SetError(err))
+	}
+
+	return nil
 }
 
 // func (r *RedisSessionStore) CheckHealth() *errors.BusinessError {

@@ -1,9 +1,14 @@
 package logger
 
 import (
+	"context"
+
+	"server/pkg/errors"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
 
 var (
 	AccessLogger     *zap.Logger
@@ -14,8 +19,11 @@ var (
 	SecurityLogger   *zap.Logger
 )
 
-type BaseLogger struct {
-	Service  string
+type BaseLogging struct {
+	Service string
+}
+
+type PayloadLogging struct {
 	TraceId  string
 	UserId   string
 	ClientId string
@@ -23,8 +31,11 @@ type BaseLogger struct {
 }
 
 type BaseLogLevel struct {
+	BaseLog      BaseLogging = BASE_LOGGING
+	PayloadLog   PayloadLogging
 	Code         string `json:"code"`
 	Key          string `json:"key"`
+	expected     bool
 	HTTPStatus   string `json:"http_status"`
 	GRPCCode     string `json:"grpc_code"`
 	Message      string `json:"message"`
@@ -34,7 +45,9 @@ type BaseLogLevel struct {
 	ServerAction string `json:"server_action"`
 }
 
-func Init() error {
+func Init(service string) error {
+	BASE_LOGGING.Service = service
+
 	encoderCfg := zapcore.EncoderConfig{TimeKey: "ts", LevelKey: "level", NameKey: "logger", CallerKey: "caller", MessageKey: "msg", StacktraceKey: "stack", LineEnding: zapcore.DefaultLineEnding, EncodeLevel: zapcore.LowercaseLevelEncoder, EncodeTime: zapcore.ISO8601TimeEncoder, EncodeDuration: zapcore.SecondsDurationEncoder, EncodeCaller: zapcore.ShortCallerEncoder}
 	encoder := zapcore.NewConsoleEncoder(encoderCfg)
 
@@ -71,4 +84,23 @@ func Init() error {
 	}
 
 	return nil
+}
+
+func LogBySeverity(ctx context.Context, msg string, err *errors.AppError, extra map[string]interface{}) {
+
+	level := LevelBySeverity(err.Severity, err.Expected)
+	switch level {
+	case zapcore.ErrorLevel:
+		LogError(ctx, msg, ErrorParams{
+			BaseLogLevel: BASE_LOGGING,
+		})
+	case zapcore.WarnLevel:
+		logger.Warn(msg, fields...)
+	case zapcore.InfoLevel:
+		logger.Info(msg, fields...)
+	case zapcore.DebugLevel:
+		logger.Debug(msg, fields...)
+	default:
+		logger.Info(msg, fields...)
+	}
 }
