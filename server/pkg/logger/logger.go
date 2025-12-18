@@ -9,7 +9,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-
 var (
 	AccessLogger     *zap.Logger
 	AuditLogger      *zap.Logger
@@ -19,34 +18,44 @@ var (
 	SecurityLogger   *zap.Logger
 )
 
-type BaseLogging struct {
-	Service string
+type ServiceInfo struct {
+	Name string
 }
 
-type PayloadLogging struct {
+type RequestContext struct {
 	TraceId  string
 	UserId   string
 	ClientId string
 	RealmId  string
 }
 
-type BaseLogLevel struct {
-	BaseLog      BaseLogging = BASE_LOGGING
-	PayloadLog   PayloadLogging
-	Code         string `json:"code"`
-	Key          string `json:"key"`
-	expected     bool
-	HTTPStatus   string `json:"http_status"`
-	GRPCCode     string `json:"grpc_code"`
-	Message      string `json:"message"`
-	Cause        string `json:"cause"`
-	CauseDetail  string `json:"cause_detail"`
-	ClientAction string `json:"client_action"`
-	ServerAction string `json:"server_action"`
+func (p RequestContext) IsEmpty() bool {
+	return p.TraceId == "" &&
+		p.UserId == "" &&
+		p.ClientId == "" &&
+		p.RealmId == ""
 }
 
-func Init(service string) error {
-	BASE_LOGGING.Service = service
+type LogEntry struct {
+	ServiceInfo    ServiceInfo
+	RequestContext RequestContext
+	Code           string `json:"code"`
+	Key            string `json:"key"`
+	expected       bool
+	HTTPStatus     string `json:"http_status"`
+	GRPCCode       string `json:"grpc_code"`
+	Message        string `json:"message"`
+	Cause          string `json:"cause"`
+	CauseDetail    string `json:"cause_detail"`
+	ClientAction   string `json:"client_action"`
+	ServerAction   string `json:"server_action"`
+}
+
+func Init(opts ...func(*ServiceInfo)) error {
+
+	for _, opt := range opts {
+		opt(&BASE_LOGGING)
+	}
 
 	encoderCfg := zapcore.EncoderConfig{TimeKey: "ts", LevelKey: "level", NameKey: "logger", CallerKey: "caller", MessageKey: "msg", StacktraceKey: "stack", LineEnding: zapcore.DefaultLineEnding, EncodeLevel: zapcore.LowercaseLevelEncoder, EncodeTime: zapcore.ISO8601TimeEncoder, EncodeDuration: zapcore.SecondsDurationEncoder, EncodeCaller: zapcore.ShortCallerEncoder}
 	encoder := zapcore.NewConsoleEncoder(encoderCfg)
@@ -92,7 +101,9 @@ func LogBySeverity(ctx context.Context, msg string, err *errors.AppError, extra 
 	switch level {
 	case zapcore.ErrorLevel:
 		LogError(ctx, msg, ErrorParams{
-			BaseLogLevel: BASE_LOGGING,
+			LogEntry: LogEntry{
+				BaseLog: BASE_LOGGING,
+			},
 		})
 	case zapcore.WarnLevel:
 		logger.Warn(msg, fields...)

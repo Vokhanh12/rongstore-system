@@ -3,10 +3,11 @@ package logger
 import "context"
 
 type ErrorParams struct {
-	BaseLogLevel
+	LogEntry LogEntry
+	Extra    map[string]interface{}
 }
 
-func LogError(ctx context.Context, msg string, extra AccessParams) {
-	fields := buildFieldsAccess(ctx, extra)
+func LogError(ctx context.Context, msg string, extra ErrorParams) {
+	fields := buildFieldsError(ctx, extra)
 	AccessLogger.Info(msg, fields...)
 }

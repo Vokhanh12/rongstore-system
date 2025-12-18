@@ -20,7 +20,9 @@ import (
 
 func main() {
 	// --- 0️⃣ Init Logger ---
-	if err := logger.Init(); err != nil {
+	if err := logger.Init(
+		logger.WithService("iam-service"),
+	); err != nil {
 		log.Fatalf("failed to init logger: %v", err)
 	}
 

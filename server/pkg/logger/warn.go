@@ -1,6 +1,6 @@
 
 type WarnParams struct {
-	BaseLogLevel
+	LogEntry
 }
 
 func LogWarn(ctx context.Context, msg string, extra AccessParams) {

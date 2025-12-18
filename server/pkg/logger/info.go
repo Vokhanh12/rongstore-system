@@ -3,7 +3,7 @@ package logger
 import "context"
 
 type InfoParams struct {
-	BaseLogLevel
+	LogEntry
 }
 
 func LogInfo(ctx context.Context, msg string, extra AccessParams) {
