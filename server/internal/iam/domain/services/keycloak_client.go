@@ -50,6 +50,6 @@ type Keycloak interface {
 	GetUserPermissions(ctx context.Context, accessToken string) ([]Permission, *errors.AppError)
 
 	// SERVICE HEALTH
-	CheckHealth(ctx context.Context) error
+	CheckHealth(ctx context.Context) *errors.AppError
 	GetBaseURL() string
 }

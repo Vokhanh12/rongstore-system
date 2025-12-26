@@ -12,7 +12,6 @@ import (
 	"server/internal/iam/infrastructure/cache"
 	"server/internal/iam/infrastructure/client"
 	"server/internal/iam/infrastructure/db"
-	"server/internal/iam/infrastructure/errors"
 	"server/internal/iam/infrastructure/eventbus"
 	"server/internal/iam/infrastructure/repositories"
 	"server/internal/iam/interface/grpc"
@@ -25,19 +24,17 @@ func InitializeIamHandler(ctx context.Context) IamDeps {
 	configConfig := config.Load()
 	gormDB := db.InitGormPostgresDB(ctx, configConfig)
 	userRepository := repositories.NewGormUserRepository(gormDB)
-	businessError := errors.InitBusinessError(configConfig)
-	keycloak := client.InitKeycloakClient(ctx, configConfig, businessError)
+	keycloak := client.InitKeycloakClient(ctx, configConfig)
 	loginUsecase := usecases.NewLoginUsecase(userRepository, keycloak)
-	redisSessionStore := cache.InitRedisSessionStore(ctx, configConfig, businessError)
-	handshakeUsecase := usecases.NewHandshakeUsecase(userRepository, redisSessionStore)
+	iRedisCache := cache.InitRedisCache(ctx, configConfig)
+	handshakeUsecase := usecases.NewHandshakeUsecase(userRepository, iRedisCache)
 	iamHandler := grpc.NewIamHandler(loginUsecase, handshakeUsecase)
 	rabbitMQEventBus := eventbus.InitRabbitMQEventBus(configConfig)
 	iamDeps := IamDeps{
 		Handler:           iamHandler,
-		RedisSessionStore: redisSessionStore,
+		RedisSessionStore: iRedisCache,
 		Keycloak:          keycloak,
 		EventBus:          rabbitMQEventBus,
-		BusinessError:     businessError,
 	}
 	return iamDeps
 }

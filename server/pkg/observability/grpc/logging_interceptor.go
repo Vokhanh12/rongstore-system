@@ -25,8 +25,10 @@ func LoggingUnaryInterceptor(service string) grpc.UnaryServerInterceptor {
 		msg := simplifyMethod(info.FullMethod)
 
 		logger.LogAccess(ctx, msg, logger.AccessParams{
-			Base: logger.BaseLogger{
-				Service:  service,
+			ServiceInfo: logger.ServiceInfo{
+				Name: service,
+			},
+			RequestContext: logger.RequestContext{
 				TraceId:  traceId,
 				UserId:   userId,
 				ClientId: clientId,

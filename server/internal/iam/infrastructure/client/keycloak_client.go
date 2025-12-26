@@ -27,7 +27,22 @@ type KeycloakClient struct {
 	Health  string
 }
 
-// func (kc *KeycloakClient) GetUserPermissions(ctx context.Context, accessToken string) ([]sv.Permission, *errors.BusinessError) {
+// GetUserPermissions implements services.Keycloak.
+func (kc *KeycloakClient) GetUserPermissions(ctx context.Context, accessToken string) ([]sv.Permission, *errors.AppError) {
+	panic("unimplemented")
+}
+
+// IntrospectToken implements services.Keycloak.
+func (kc *KeycloakClient) IntrospectToken(ctx context.Context, token string) (*sv.IntrospectionResult, *errors.AppError) {
+	panic("unimplemented")
+}
+
+// Logout implements services.Keycloak.
+func (kc *KeycloakClient) Logout(ctx context.Context, refreshToken string) *errors.AppError {
+	panic("unimplemented")
+}
+
+// func (kc *KeycloakClient) GetUserPermissions(ctx context.Context, accessToken string) ([]sv.Permission, *errors.AppError) {
 
 // 	form := url.Values{}
 // 	form.Set("grant_type", kc.Config.KeycloakGrantUmaTicketType)
@@ -53,40 +68,41 @@ func InitKeycloakClient(ctx context.Context, cfg *config.Config) sv.Keycloak {
 	maxRetries := cfg.MaxRetries
 	interval := time.Duration(cfg.Interval) * time.Second
 
-	kc := NewKeycloakClient(cfg, infbe)
+	kc := NewKeycloakClient(cfg)
 
 	for i := 0; i < maxRetries; i++ {
-		if err := kc.CheckHealth(ctx); err != nil {
+		if err := kc.CheckHealth(ctx); err == nil {
 			return kc
 		} else {
 
-			fields := map[string]interface{}{
-				"trace_id":  trace.NewTraceID(),
-				"retry":     i + 1,
-				"max_retry": maxRetries,
-				"operation": "init.keycloak.client",
-			}
+			// fields := map[string]interface{}{
+			// 	"trace_id":  trace.NewTraceID(),
+			// 	"retry":     i + 1,
+			// 	"max_retry": maxRetries,
+			// 	"operation": "init.keycloak.client",
+			// }
 
-			if i < maxRetries-1 {
-				logger.LogInfraDebug(ctx, err, "", fields)
-			} else {
-				logger.LogBySeverity(ctx, err, fields)
-			}
+			// if i < maxRetries-1 {
+			// 	//logger.LogInfraDebug(ctx, err, "", fields)
+			// } else {
+			// 	logger.LogBySeverity(ctx, "init.keycloak", err, fields)
+			// }
 		}
 
 		time.Sleep(interval * time.Duration(1<<i))
 	}
 
 	be := domain_errors.KEYCLOAK_UNAVAILABLE
-	panic(fmt.Sprintf(
-		"PANIC: [%s][%s] %s | cause: %s | server_action: %s | retryable: %v",
-		be.Code,
-		be.Key,
-		be.Message,
-		be.Cause,
-		be.ServerAction,
-		be.Retryable,
-	))
+	panic(
+		fmt.Sprintf(
+			"PANIC: [%s][%s] %s | cause: %s | server_action: %s | retryable: %v",
+			be.Code,
+			be.Key,
+			be.Message,
+			be.Cause,
+			be.ServerAction,
+			be.Retryable,
+		))
 }
 
 func NewKeycloakClient(cfg *config.Config) sv.Keycloak {
@@ -102,7 +118,7 @@ func (kc *KeycloakClient) GetBaseURL() string {
 	return kc.BaseURL
 }
 
-func (kc *KeycloakClient) CheckHealth(ctx context.Context) error {
+func (kc *KeycloakClient) CheckHealth(ctx context.Context) *errors.AppError {
 	resp, err := kc.Client.Get(kc.Health)
 
 	if err != nil {
@@ -110,8 +126,10 @@ func (kc *KeycloakClient) CheckHealth(ctx context.Context) error {
 			"trace_id":  trace.NewTraceID(),
 			"operation": "keycloak.checkhealth",
 		}
-		logger.LogBySeverity(ctx, err, fields)
-		return errors.New(domain_errors.KEYCLOAK_UNAVAILABLE)
+
+		err := errors.New(domain_errors.KEYCLOAK_UNAVAILABLE)
+		logger.LogBySeverity(ctx, "keycloak.checkhealth", err, fields)
+		return err
 	}
 
 	defer resp.Body.Close()
@@ -212,7 +230,7 @@ func (kc *KeycloakClient) GetToken(
 func (kc *KeycloakClient) RefreshToken(
 	ctx context.Context,
 	refreshToken string,
-) (*sv.Token, *errors.BusinessError) {
+) (*sv.Token, *errors.AppError) {
 
 	form := url.Values{}
 	form.Set("grant_type", "refresh_token")
@@ -222,7 +240,7 @@ func (kc *KeycloakClient) RefreshToken(
 
 	respBody, status, err := kc.doFormRequest(ctx, form)
 	if err != nil {
-		return nil, errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
+		return nil, errors.New(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
 
 	if status != http.StatusOK {
@@ -231,30 +249,30 @@ func (kc *KeycloakClient) RefreshToken(
 
 	var token sv.Token
 	if err := json.Unmarshal(respBody, &token); err != nil {
-		return nil, errors.Clone(errors.INTERNAL_FALLBACK)
+		return nil, errors.New(errors.INTERNAL_FALLBACK)
 	}
 
 	if token.AccessToken == "" {
-		return nil, errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
+		return nil, errors.New(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
 
 	return &token, nil
 }
 
-func (kc *KeycloakClient) mapKeycloakError(respBody []byte) (*sv.Token, *errors.BusinessError) {
+func (kc *KeycloakClient) mapKeycloakError(respBody []byte) (*sv.Token, *errors.AppError) {
 	var kcErr struct {
 		Error            string `json:"error"`
 		ErrorDescription string `json:"error_description"`
 	}
 
 	if err := json.Unmarshal(respBody, &kcErr); err != nil {
-		return nil, errors.Clone(errors.INTERNAL_FALLBACK)
+		return nil, errors.New(errors.INTERNAL_FALLBACK)
 	}
 
 	switch kcErr.Error {
 	case "invalid_grant":
-		return nil, errors.Clone(domain_errors.INVALID_CREDENTIALS)
+		return nil, errors.New(domain_errors.INVALID_CREDENTIALS)
 	default:
-		return nil, errors.Clone(domain_errors.KEYCLOAK_UNAVAILABLE)
+		return nil, errors.New(domain_errors.KEYCLOAK_UNAVAILABLE)
 	}
 }

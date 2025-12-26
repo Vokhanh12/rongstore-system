@@ -5,14 +5,15 @@ import (
 )
 
 type AccessParams struct {
-	ServiceInfo ServiceInfo
-	Path        string
-	Method      string
-	HTTPCode    int
-	IP          string
-	UserAgent   string
-	LatencyMS   int64
-	Extra       map[string]interface{}
+	ServiceInfo    ServiceInfo
+	RequestContext RequestContext
+	Path           string
+	Method         string
+	HTTPCode       int
+	IP             string
+	UserAgent      string
+	LatencyMS      int64
+	Extra          map[string]interface{}
 }
 
 func LogAccess(ctx context.Context, msg string, extra AccessParams) {

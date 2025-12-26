@@ -10,7 +10,11 @@ import (
 )
 
 var (
+	serviceInfo      ServiceInfo
 	AccessLogger     *zap.Logger
+	ErrorLogger      *zap.Logger
+	WarnLogger       *zap.Logger
+	InfoLogger       *zap.Logger
 	AuditLogger      *zap.Logger
 	BusinessLogger   *zap.Logger
 	InfraLogger      *zap.Logger
@@ -20,6 +24,10 @@ var (
 
 type ServiceInfo struct {
 	Name string
+}
+
+func GetServiceInfo() ServiceInfo {
+	return serviceInfo
 }
 
 type RequestContext struct {
@@ -51,10 +59,10 @@ type LogEntry struct {
 	ServerAction   string `json:"server_action"`
 }
 
-func Init(opts ...func(*ServiceInfo)) error {
+func Init(opts ...Option) error {
 
 	for _, opt := range opts {
-		opt(&BASE_LOGGING)
+		opt(&serviceInfo)
 	}
 
 	encoderCfg := zapcore.EncoderConfig{TimeKey: "ts", LevelKey: "level", NameKey: "logger", CallerKey: "caller", MessageKey: "msg", StacktraceKey: "stack", LineEnding: zapcore.DefaultLineEnding, EncodeLevel: zapcore.LowercaseLevelEncoder, EncodeTime: zapcore.ISO8601TimeEncoder, EncodeDuration: zapcore.SecondsDurationEncoder, EncodeCaller: zapcore.ShortCallerEncoder}
@@ -63,6 +71,21 @@ func Init(opts ...func(*ServiceInfo)) error {
 	var err error
 
 	AccessLogger, err = newFileLogger("logs/access.log", encoder, zap.InfoLevel)
+	if err != nil {
+		return err
+	}
+
+	InfoLogger, err = newFileLogger("logs/info.log", encoder, zap.InfoLevel)
+	if err != nil {
+		return err
+	}
+
+	ErrorLogger, err = newFileLogger("logs/error.log", encoder, zap.ErrorLevel)
+	if err != nil {
+		return err
+	}
+
+	WarnLogger, err = newFileLogger("logs/warn.log", encoder, zap.WarnLevel)
 	if err != nil {
 		return err
 	}
@@ -96,22 +119,49 @@ func Init(opts ...func(*ServiceInfo)) error {
 }
 
 func LogBySeverity(ctx context.Context, msg string, err *errors.AppError, extra map[string]interface{}) {
-
+	if err == nil {
+		panic("error null")
+	}
 	level := LevelBySeverity(err.Severity, err.Expected)
 	switch level {
 	case zapcore.ErrorLevel:
 		LogError(ctx, msg, ErrorParams{
 			LogEntry: LogEntry{
-				BaseLog: BASE_LOGGING,
+				Code:     err.Code,
+				Key:      err.Key,
+				GRPCCode: err.GRPCCode,
+				Message:  err.Message,
+				Cause:    err.Cause,
+				//CauseDetail:  err.Error(),
+				ClientAction: err.ClientAction,
+				ServerAction: err.ServerAction,
 			},
 		})
 	case zapcore.WarnLevel:
-		logger.Warn(msg, fields...)
+		LogWarn(ctx, msg, WarnParams{
+			LogEntry: LogEntry{
+				Code:     err.Code,
+				Key:      err.Key,
+				GRPCCode: err.GRPCCode,
+				Message:  err.Message,
+				Cause:    err.Cause,
+				//CauseDetail:  err.Error(),
+				ClientAction: err.ClientAction,
+				ServerAction: err.ServerAction,
+			},
+		})
 	case zapcore.InfoLevel:
-		logger.Info(msg, fields...)
-	case zapcore.DebugLevel:
-		logger.Debug(msg, fields...)
-	default:
-		logger.Info(msg, fields...)
+		LogInfo(ctx, msg, InfoParams{
+			LogEntry: LogEntry{
+				Code:     err.Code,
+				Key:      err.Key,
+				GRPCCode: err.GRPCCode,
+				Message:  err.Message,
+				Cause:    err.Cause,
+				//CauseDetail:  err.Error(),
+				ClientAction: err.ClientAction,
+				ServerAction: err.ServerAction,
+			},
+		})
 	}
 }

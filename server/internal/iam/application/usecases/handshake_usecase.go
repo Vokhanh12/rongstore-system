@@ -54,20 +54,20 @@ func MapHandshakeResultToResponseDTO(result *HandshakeResult) iamv1.HandshakeRes
 // --- Usecase ---
 type HandshakeUsecase struct {
 	UserRepo          rp.UserRepository
-	RedisSessionStore sv.RedisSessionStore
+	RedisSessionStore sv.IRedisCache
 }
 
-func NewHandshakeUsecase(repo rp.UserRepository, store sv.RedisSessionStore) *HandshakeUsecase {
+func NewHandshakeUsecase(repo rp.UserRepository, store sv.IRedisCache) *HandshakeUsecase {
 	return &HandshakeUsecase{
 		UserRepo:          repo,
 		RedisSessionStore: store,
 	}
 }
 
-func (u *HandshakeUsecase) Execute(ctx context.Context, cmd HandshakeCommand) (*HandshakeResult, error) {
+func (u *HandshakeUsecase) Execute(ctx context.Context, cmd HandshakeCommand) (*HandshakeResult, *errors.AppError) {
 	// 0) basic validation
 	if cmd.ClientPublicKey == "" {
-		return nil, errors.NewBusinessError(
+		return nil, errors.New(
 			domain.HANDSHAKE_INVALID_CLIENT_KEY,
 			errors.WithMessage("client public key is required"),
 		)
@@ -79,7 +79,7 @@ func (u *HandshakeUsecase) Execute(ctx context.Context, cmd HandshakeCommand) (*
 	// 2) Server ephemeral keypair
 	serverPriv, err := curve.GenerateKey(rand.Reader)
 	if err != nil {
-		return nil, errors.NewBusinessError(
+		return nil, errors.New(
 			domain.HANDSHAKE_RNG_FAIL,
 			errors.WithMessage("server key generation failed"),
 			errors.WithData(map[string]interface{}{"cause": err.Error()}),
@@ -92,7 +92,7 @@ func (u *HandshakeUsecase) Execute(ctx context.Context, cmd HandshakeCommand) (*
 	// 3) Parse client public key
 	clientPub, err := crypto.ParsePublicKeyFromBase64(curve, cmd.ClientPublicKey)
 	if err != nil {
-		return nil, errors.NewBusinessError(
+		return nil, errors.New(
 			domain.HANDSHAKE_INVALID_CLIENT_KEY,
 			errors.WithMessage("invalid client public key"),
 			errors.WithData(map[string]interface{}{"client_pub_len": len(cmd.ClientPublicKey)}),
@@ -103,7 +103,7 @@ func (u *HandshakeUsecase) Execute(ctx context.Context, cmd HandshakeCommand) (*
 	// 4) ECDH shared secret
 	sharedSecret, err := serverPriv.ECDH(clientPub)
 	if err != nil {
-		return nil, errors.NewBusinessError(
+		return nil, errors.New(
 			domain.HANDSHAKE_KEY_AGREEMENT_FAIL,
 			errors.WithMessage("key agreement failed"),
 		)
@@ -113,7 +113,7 @@ func (u *HandshakeUsecase) Execute(ctx context.Context, cmd HandshakeCommand) (*
 	// 5) HKDF salt
 	hkdfSalt := make([]byte, 32)
 	if _, err := rand.Read(hkdfSalt); err != nil {
-		return nil, errors.NewBusinessError(
+		return nil, errors.New(
 			domain.HANDSHAKE_RNG_FAIL,
 			errors.WithMessage("random generation failed for hkdf salt"),
 			errors.WithData(map[string]interface{}{"cause": err.Error()}),
@@ -139,7 +139,7 @@ func (u *HandshakeUsecase) Execute(ctx context.Context, cmd HandshakeCommand) (*
 	hk := hkdf.New(sha256.New, sharedSecret, hkdfSalt, info)
 	if _, err := io.ReadFull(hk, okm); err != nil {
 		crypto.ZeroBytes(okm)
-		return nil, errors.NewBusinessError(
+		return nil, errors.New(
 			domain.HANDSHAKE_KEY_DERIVE_FAIL,
 			errors.WithMessage("hkdf derive failed"),
 			errors.WithData(map[string]interface{}{"cause": err.Error()}),
@@ -163,7 +163,7 @@ func (u *HandshakeUsecase) Execute(ctx context.Context, cmd HandshakeCommand) (*
 		crypto.ZeroBytes(okm)
 		crypto.ZeroBytes(kc2s)
 		crypto.ZeroBytes(ks2c)
-		return nil, errors.NewBusinessError(
+		return nil, errors.New(
 			domain.HANDSHAKE_STORAGE_FAIL,
 			errors.WithMessage("failed to store session"),
 			errors.WithData(map[string]interface{}{"cause": err.Error()}),

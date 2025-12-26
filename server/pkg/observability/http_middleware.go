@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func HTTPMiddleware(next http.Handler, store services.SessionStore, serviceName string) http.Handler {
+func HTTPMiddleware(next http.Handler, store services.IRedisCache, serviceName string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		ctx := r.Context()
@@ -49,7 +49,7 @@ func HTTPMiddleware(next http.Handler, store services.SessionStore, serviceName 
 			zap.String("method", r.Method),
 			zap.String("trace_id", ctxutil.TraceIDFromContext(ctx)),
 			zap.Int64("latency_ms", latency),
-			zap.String("instance", hostnameCache),
+			//zap.String("instance", hostnameCache),
 			//zap.String("env", func() string { e := os.Getenv("ENV"); if e==\"\" { return \"unknown\" }; return e }()),
 		}
 		if sid := ctxutil.SessionIDFromContext(ctx); sid != "" {

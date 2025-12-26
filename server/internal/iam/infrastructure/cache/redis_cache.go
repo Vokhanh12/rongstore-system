@@ -11,7 +11,6 @@ import (
 	sv "server/internal/iam/domain/services"
 	"server/pkg/config"
 	"server/pkg/errors"
-	"server/pkg/logger"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -23,7 +22,7 @@ type RedisCache struct {
 	ttl time.Duration
 }
 
-func InitRedis(ctx context.Context, cfg *config.Config) sv.IRedisCache {
+func InitRedisCache(ctx context.Context, cfg *config.Config) sv.IRedisCache {
 	maxRetries := cfg.MaxRetries
 	interval := time.Duration(cfg.Interval) * time.Second
 
@@ -38,16 +37,16 @@ func InitRedis(ctx context.Context, cfg *config.Config) sv.IRedisCache {
 			}
 		}
 
-		fields := map[string]interface{}{
-			"retry":     i + 1,
-			"operation": "init.redis.session.store",
-		}
+		// fields := map[string]interface{}{
+		// 	"retry":     i + 1,
+		// 	"operation": "init.redis.session.store",
+		// }
 
-		if i < maxRetries-1 {
-			//logger.LogInfraDebug(ctx, err, "", fields)
-		} else {
-			logger.LogBySeverity(ctx, err, fields)
-		}
+		// // if i < maxRetries-1 {
+		// // 	//logger.LogInfraDebug(ctx, err, "", fields)
+		// // } else {
+		// // 	logger.LogBySeverity(ctx, "init.redis", err, fields)
+		// // }
 
 		time.Sleep(interval * time.Duration(1<<i))
 	}

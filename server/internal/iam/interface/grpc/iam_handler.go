@@ -7,7 +7,6 @@ import (
 	iamv1 "server/api/iam/v1"
 
 	usecases "server/internal/iam/application/usecases"
-	"server/internal/iam/domain/services"
 
 	"server/pkg/logger"
 	reshelper "server/pkg/util/response_helper"
@@ -15,7 +14,6 @@ import (
 
 type IamHandler struct {
 	iamv1.UnimplementedIamServiceServer
-	business_errors  services.BusinessError
 	loginUsecase     *usecases.LoginUsecase
 	handshakeUsecase *usecases.HandshakeUsecase
 }
@@ -36,7 +34,7 @@ func (h *IamHandler) Login(ctx context.Context, req *iamv1.LoginRequest) (*commo
 	result, err := h.loginUsecase.Execute(ctx, cmd)
 	if err != nil {
 
-		logger.LogBySeverity(ctx, err, map[string]interface{}{
+		logger.LogBySeverity(ctx, "iam_handler.login", err, map[string]interface{}{
 			"handler": "Login",
 			"request": req,
 		})
@@ -54,7 +52,7 @@ func (h *IamHandler) Handshake(ctx context.Context, req *iamv1.HandshakeRequest)
 	result, err := h.handshakeUsecase.Execute(ctx, cmd)
 	if err != nil {
 
-		logger.LogBySeverity(ctx, err, map[string]interface{}{
+		logger.LogBySeverity(ctx, "iam_handler.handshake", err, map[string]interface{}{
 			"handler": "Handshake",
 			"request": req,
 		})

@@ -18,9 +18,7 @@ import (
 
 // BuildErrorResponse builds a BaseResponse representing a failed operation.
 // It sets success=false, fills Metadata, and sets Error code.
-func BuildErrorResponse(ctx context.Context, err error) *commonv1.BaseResponse {
-
-	be := errors.GetBusinessError(err)
+func BuildErrorResponse(ctx context.Context, err *errors.AppError) *commonv1.BaseResponse {
 
 	return &commonv1.BaseResponse{
 		Success: false,
@@ -30,9 +28,9 @@ func BuildErrorResponse(ctx context.Context, err error) *commonv1.BaseResponse {
 			Timestamp: time.Now().UTC().Format(time.RFC3339),
 		},
 		Error: &commonv1.Error{
-			Code:     be.Code,
-			Message:  be.Message,
-			Severity: be.Severity,
+			Code:     err.Code,
+			Message:  err.Message,
+			Severity: err.Severity,
 		},
 	}
 }

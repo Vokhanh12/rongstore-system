@@ -4,9 +4,10 @@ import "context"
 
 type InfoParams struct {
 	LogEntry
+	Extra map[string]interface{}
 }
 
-func LogInfo(ctx context.Context, msg string, extra AccessParams) {
-	fields := buildFieldsAccess(ctx, extra)
-	AccessLogger.Info(msg, fields...)
+func LogInfo(ctx context.Context, msg string, extra InfoParams) {
+	fields := buildFieldsInfo(ctx, extra)
+	InfoLogger.Info(msg, fields...)
 }

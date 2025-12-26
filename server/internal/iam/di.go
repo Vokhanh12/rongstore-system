@@ -8,8 +8,7 @@ import (
 
 type IamDeps struct {
 	Handler           *iagrpc.IamHandler
-	RedisSessionStore services.RedisSessionStore
+	RedisSessionStore services.IRedisCache
 	Keycloak          services.Keycloak
-	BusinessError     services.BusinessError
 	EventBus          *eventbus.RabbitMQEventBus
 }

@@ -11,7 +11,6 @@ import (
 	iampb "server/api/iam/v1"
 	wire "server/internal/iam"
 	"server/pkg/auth"
-	"server/pkg/config"
 	"server/pkg/logger"
 
 	// "server/pkg/metrics"
@@ -28,8 +27,6 @@ func main() {
 
 	ctx := context.Background()
 
-	cfg := config.Load()
-
 	// metrics.Register()
 
 	// go func() {
@@ -40,20 +37,14 @@ func main() {
 	// 	}
 	// }()
 
-	logger.LogAccess(ctx, logger.AccessParams{
-		Service:  "iam_service",
-		Handler:  "KeycloakCheck",
-		Method:   "GET",
-		Status:   "checking",
-		Extra:    map[string]interface{}{"url": cfg.KeycloakURL},
-		HTTPCode: 0,
-	})
+	logger.Init(
+		logger.WithService("Iam"),
+	)
 
 	deps := wire.InitializeIamHandler(ctx)
 
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
-		logger.LogInfraError(ctx, err, "", nil)
 	}
 
 	grpcServer := grpc.NewServer(
@@ -69,7 +60,7 @@ func main() {
 	iampb.RegisterIamServiceServer(grpcServer, deps.Handler)
 
 	if err := grpcServer.Serve(lis); err != nil {
-		logger.LogInfraError(ctx, err, "", nil)
+		//logger.LogInfraError(ctx, err, "", nil)
 	}
 }
 

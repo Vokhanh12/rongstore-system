@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"server/pkg/config"
-	"server/pkg/logger"
 
 	domain_errors "server/internal/iam/domain"
 
@@ -27,25 +26,23 @@ func InitGormPostgresDB(ctx context.Context, cfg *config.Config) *gorm.DB {
 		cfg.PostgresPort,
 	)
 
-	var db *gorm.DB
-	var err error
-
 	for i := 0; i < maxRetries; i++ {
-		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err == nil {
 			return db
 		}
 
-		fields := map[string]interface{}{
-			"retry":     i + 1,
-			"operation": "init.gorm.postgres",
-		}
+		// fields := map[string]interface{}{
+		// 	"retry":     i + 1,
+		// 	"operation": "init.gorm.postgres",
+		// }
 
-		if i < maxRetries-1 {
-			logger.LogInfraDebug(ctx, err, "", fields)
-		} else {
-			logger.LogBySeverity(ctx, err, fields)
-		}
+		// if i < maxRetries-1 {
+		// 	//logger.LogInfraDebug(ctx, err, "", fields)
+		// } else {
+		// 	err := errors.New(domain_errors.POSTGRES_UNAVAILABLE)
+		// 	logger.LogBySeverity(ctx, "init.postgres", err, fields)
+		// }
 
 		time.Sleep(interval * time.Duration(1<<i))
 	}
