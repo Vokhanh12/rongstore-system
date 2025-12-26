@@ -118,21 +118,28 @@ func Init(opts ...Option) error {
 	return nil
 }
 
-func LogBySeverity(ctx context.Context, msg string, err *errors.AppError, extra map[string]interface{}) {
+func LogBySeverity(ctx context.Context, msg string, err *errors.AppError) {
+
 	if err == nil {
-		panic("error null")
+		LogWarn(ctx, msg, WarnParams{
+			LogEntry: LogEntry{
+				Message: "nil AppError passed to logger",
+			},
+		})
+		return
 	}
+
 	level := LevelBySeverity(err.Severity, err.Expected)
 	switch level {
 	case zapcore.ErrorLevel:
 		LogError(ctx, msg, ErrorParams{
 			LogEntry: LogEntry{
-				Code:     err.Code,
-				Key:      err.Key,
-				GRPCCode: err.GRPCCode,
-				Message:  err.Message,
-				Cause:    err.Cause,
-				//CauseDetail:  err.Error(),
+				Code:         err.Code,
+				Key:          err.Key,
+				GRPCCode:     err.GRPCCode,
+				Message:      err.Message,
+				Cause:        err.Cause,
+				CauseDetail:  err.GetCauseDetail(),
 				ClientAction: err.ClientAction,
 				ServerAction: err.ServerAction,
 			},
@@ -140,12 +147,12 @@ func LogBySeverity(ctx context.Context, msg string, err *errors.AppError, extra 
 	case zapcore.WarnLevel:
 		LogWarn(ctx, msg, WarnParams{
 			LogEntry: LogEntry{
-				Code:     err.Code,
-				Key:      err.Key,
-				GRPCCode: err.GRPCCode,
-				Message:  err.Message,
-				Cause:    err.Cause,
-				//CauseDetail:  err.Error(),
+				Code:         err.Code,
+				Key:          err.Key,
+				GRPCCode:     err.GRPCCode,
+				Message:      err.Message,
+				Cause:        err.Cause,
+				CauseDetail:  err.GetCauseDetail(),
 				ClientAction: err.ClientAction,
 				ServerAction: err.ServerAction,
 			},
@@ -153,12 +160,12 @@ func LogBySeverity(ctx context.Context, msg string, err *errors.AppError, extra 
 	case zapcore.InfoLevel:
 		LogInfo(ctx, msg, InfoParams{
 			LogEntry: LogEntry{
-				Code:     err.Code,
-				Key:      err.Key,
-				GRPCCode: err.GRPCCode,
-				Message:  err.Message,
-				Cause:    err.Cause,
-				//CauseDetail:  err.Error(),
+				Code:         err.Code,
+				Key:          err.Key,
+				GRPCCode:     err.GRPCCode,
+				Message:      err.Message,
+				Cause:        err.Cause,
+				CauseDetail:  err.GetCauseDetail(),
 				ClientAction: err.ClientAction,
 				ServerAction: err.ServerAction,
 			},

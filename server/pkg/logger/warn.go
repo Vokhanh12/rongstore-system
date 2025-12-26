@@ -9,5 +9,5 @@ type WarnParams struct {
 
 func LogWarn(ctx context.Context, msg string, extra WarnParams) {
 	fields := buildFieldsWarn(ctx, extra)
-	WarnLogger.Info(msg, fields...)
+	WarnLogger.Warn(msg, fields...)
 }

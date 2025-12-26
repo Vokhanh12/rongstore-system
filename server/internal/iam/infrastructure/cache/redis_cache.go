@@ -11,6 +11,8 @@ import (
 	sv "server/internal/iam/domain/services"
 	"server/pkg/config"
 	"server/pkg/errors"
+	"server/pkg/logger"
+	"server/pkg/util/infahelper"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -23,35 +25,26 @@ type RedisCache struct {
 }
 
 func InitRedisCache(ctx context.Context, cfg *config.Config) sv.IRedisCache {
-	maxRetries := cfg.MaxRetries
-	interval := time.Duration(cfg.Interval) * time.Second
-
-	for i := 0; i < maxRetries; i++ {
-		rdb := newRedisCache(cfg)
-
-		err := pingRedis(rdb)
-		if err == nil {
-			return &RedisCache{
-				rdb: rdb,
-				ttl: RedisTTLFromConfig(cfg),
+	rdb, err := infahelper.Retry(
+		cfg.MaxRetries,
+		time.Duration(cfg.Interval)*time.Second,
+		func() (*redis.Client, *errors.AppError) {
+			rdb := newRedisCache(cfg)
+			if err := pingRedis(rdb); err != nil {
+				return nil, err
 			}
-		}
-
-		// fields := map[string]interface{}{
-		// 	"retry":     i + 1,
-		// 	"operation": "init.redis.session.store",
-		// }
-
-		// // if i < maxRetries-1 {
-		// // 	//logger.LogInfraDebug(ctx, err, "", fields)
-		// // } else {
-		// // 	logger.LogBySeverity(ctx, "init.redis", err, fields)
-		// // }
-
-		time.Sleep(interval * time.Duration(1<<i))
+			return rdb, nil
+		},
+	)
+	if err != nil {
+		logger.LogBySeverity(ctx, "Init.RedisCache", err)
+		return nil
 	}
 
-	return nil
+	return &RedisCache{
+		rdb: rdb,
+		ttl: RedisTTLFromConfig(cfg),
+	}
 }
 
 func newRedisCache(cfg *config.Config) *redis.Client {

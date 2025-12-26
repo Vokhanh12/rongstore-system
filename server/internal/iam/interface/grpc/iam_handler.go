@@ -34,10 +34,7 @@ func (h *IamHandler) Login(ctx context.Context, req *iamv1.LoginRequest) (*commo
 	result, err := h.loginUsecase.Execute(ctx, cmd)
 	if err != nil {
 
-		logger.LogBySeverity(ctx, "iam_handler.login", err, map[string]interface{}{
-			"handler": "Login",
-			"request": req,
-		})
+		logger.LogBySeverity(ctx, "iam_handler.login", err)
 
 		return reshelper.BuildErrorResponse(ctx, err), nil
 	}
@@ -52,10 +49,7 @@ func (h *IamHandler) Handshake(ctx context.Context, req *iamv1.HandshakeRequest)
 	result, err := h.handshakeUsecase.Execute(ctx, cmd)
 	if err != nil {
 
-		logger.LogBySeverity(ctx, "iam_handler.handshake", err, map[string]interface{}{
-			"handler": "Handshake",
-			"request": req,
-		})
+		logger.LogBySeverity(ctx, "iam_handler.handshake", err)
 
 		return reshelper.BuildErrorResponse(ctx, err), nil
 	}

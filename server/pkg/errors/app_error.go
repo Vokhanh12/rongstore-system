@@ -24,3 +24,7 @@ func (e *AppError) Error() string {
 	}
 	return fmt.Sprintf("%s (%d): %s", e.Code, e.Status, e.Message)
 }
+
+func (e *AppError) GetCauseDetail() string {
+	return e.causeDetail.Error()
+}

@@ -9,5 +9,5 @@ type ErrorParams struct {
 
 func LogError(ctx context.Context, msg string, extra ErrorParams) {
 	fields := buildFieldsError(ctx, extra)
-	AccessLogger.Info(msg, fields...)
+	ErrorLogger.Error(msg, fields...)
 }

@@ -15,7 +15,7 @@ import (
 	"server/pkg/config"
 	"server/pkg/errors"
 	"server/pkg/logger"
-	"server/pkg/trace"
+	"server/pkg/util/infahelper"
 )
 
 var _ sv.Keycloak = (*KeycloakClient)(nil)
@@ -64,48 +64,36 @@ func (kc *KeycloakClient) Logout(ctx context.Context, refreshToken string) *erro
 
 // }
 
-func InitKeycloakClient(ctx context.Context, cfg *config.Config) sv.Keycloak {
-	maxRetries := cfg.MaxRetries
-	interval := time.Duration(cfg.Interval) * time.Second
+func InitKeycloakClient(
+	ctx context.Context,
+	cfg *config.Config,
+) sv.Keycloak {
 
-	kc := NewKeycloakClient(cfg)
+	kc, err := infahelper.Retry(
+		cfg.MaxRetries,
+		time.Duration(cfg.Interval)*time.Second,
+		func() (*KeycloakClient, *errors.AppError) {
+			client := NewKeycloakClient(cfg)
+			if err := client.CheckHealth(ctx); err != nil {
+				return nil, err
+			}
+			return client, nil
+		},
+	)
 
-	for i := 0; i < maxRetries; i++ {
-		if err := kc.CheckHealth(ctx); err == nil {
-			return kc
-		} else {
-
-			// fields := map[string]interface{}{
-			// 	"trace_id":  trace.NewTraceID(),
-			// 	"retry":     i + 1,
-			// 	"max_retry": maxRetries,
-			// 	"operation": "init.keycloak.client",
-			// }
-
-			// if i < maxRetries-1 {
-			// 	//logger.LogInfraDebug(ctx, err, "", fields)
-			// } else {
-			// 	logger.LogBySeverity(ctx, "init.keycloak", err, fields)
-			// }
-		}
-
-		time.Sleep(interval * time.Duration(1<<i))
+	if err != nil {
+		logger.LogBySeverity(
+			ctx,
+			"Init.KeycloakClient",
+			err,
+		)
+		return nil
 	}
 
-	be := domain_errors.KEYCLOAK_UNAVAILABLE
-	panic(
-		fmt.Sprintf(
-			"PANIC: [%s][%s] %s | cause: %s | server_action: %s | retryable: %v",
-			be.Code,
-			be.Key,
-			be.Message,
-			be.Cause,
-			be.ServerAction,
-			be.Retryable,
-		))
+	return kc
 }
 
-func NewKeycloakClient(cfg *config.Config) sv.Keycloak {
+func NewKeycloakClient(cfg *config.Config) *KeycloakClient {
 	return &KeycloakClient{
 		BaseURL: cfg.KeycloakURL,
 		Client:  &http.Client{Timeout: 5 * time.Second},
@@ -119,23 +107,29 @@ func (kc *KeycloakClient) GetBaseURL() string {
 }
 
 func (kc *KeycloakClient) CheckHealth(ctx context.Context) *errors.AppError {
-	resp, err := kc.Client.Get(kc.Health)
-
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		kc.Health,
+		nil,
+	)
 	if err != nil {
-		fields := map[string]interface{}{
-			"trace_id":  trace.NewTraceID(),
-			"operation": "keycloak.checkhealth",
-		}
-
-		err := errors.New(domain_errors.KEYCLOAK_UNAVAILABLE)
-		logger.LogBySeverity(ctx, "keycloak.checkhealth", err, fields)
-		return err
+		return errors.New(
+			domain_errors.KEYCLOAK_UNAVAILABLE,
+			errors.SetError(err),
+		)
 	}
 
+	resp, err := kc.Client.Do(req)
+	if err != nil {
+		return errors.New(
+			domain_errors.KEYCLOAK_UNAVAILABLE,
+			errors.SetError(err),
+		)
+	}
 	defer resp.Body.Close()
 
 	switch resp.StatusCode {
-
 	case http.StatusOK:
 		return nil
 
@@ -148,7 +142,9 @@ func (kc *KeycloakClient) CheckHealth(ctx context.Context) *errors.AppError {
 	case http.StatusInternalServerError:
 		return errors.New(domain_errors.KEYCLOAK_INTERNAL)
 
-	case http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+	case http.StatusBadGateway,
+		http.StatusServiceUnavailable,
+		http.StatusGatewayTimeout:
 		return errors.New(domain_errors.KEYCLOAK_UNAVAILABLE)
 
 	default:

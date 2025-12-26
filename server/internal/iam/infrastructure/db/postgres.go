@@ -6,6 +6,9 @@ import (
 	"time"
 
 	"server/pkg/config"
+	"server/pkg/errors"
+	"server/pkg/logger"
+	"server/pkg/util/infahelper"
 
 	domain_errors "server/internal/iam/domain"
 
@@ -13,9 +16,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func InitGormPostgresDB(ctx context.Context, cfg *config.Config) *gorm.DB {
-	maxRetries := cfg.MaxRetries
-	interval := time.Duration(cfg.Interval) * time.Second
+func InitGormPostgresDB(
+	ctx context.Context,
+	cfg *config.Config,
+) *gorm.DB {
 
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
@@ -26,35 +30,29 @@ func InitGormPostgresDB(ctx context.Context, cfg *config.Config) *gorm.DB {
 		cfg.PostgresPort,
 	)
 
-	for i := 0; i < maxRetries; i++ {
-		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-		if err == nil {
-			return db
-		}
+	db, err := infahelper.Retry(
+		cfg.MaxRetries,
+		time.Duration(cfg.Interval)*time.Second,
+		func() (*gorm.DB, *errors.AppError) {
+			db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+			if err != nil {
+				return nil, errors.New(
+					domain_errors.POSTGRES_UNAVAILABLE,
+					errors.SetError(err),
+				)
+			}
+			return db, nil
+		},
+	)
 
-		// fields := map[string]interface{}{
-		// 	"retry":     i + 1,
-		// 	"operation": "init.gorm.postgres",
-		// }
-
-		// if i < maxRetries-1 {
-		// 	//logger.LogInfraDebug(ctx, err, "", fields)
-		// } else {
-		// 	err := errors.New(domain_errors.POSTGRES_UNAVAILABLE)
-		// 	logger.LogBySeverity(ctx, "init.postgres", err, fields)
-		// }
-
-		time.Sleep(interval * time.Duration(1<<i))
+	if err != nil {
+		logger.LogBySeverity(
+			ctx,
+			"Init.Postgres",
+			err,
+		)
+		return nil
 	}
 
-	be := domain_errors.POSTGRES_UNAVAILABLE
-	panic(fmt.Sprintf(
-		"PANIC: [%s][%s] %s | cause: %s | server_action: %s | retryable: %v",
-		be.Code,
-		be.Key,
-		be.Message,
-		be.Cause,
-		be.ServerAction,
-		be.Retryable,
-	))
+	return db
 }
