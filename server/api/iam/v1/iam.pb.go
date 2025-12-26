@@ -7,7 +7,7 @@
 package iamv1
 
 import (
-	v1 "server/api/common/v1"
+	v1 "api/common/v1"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"

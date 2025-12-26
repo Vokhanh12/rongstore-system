@@ -3,4 +3,18 @@ syntax = "proto3";
 package common.v1;
 option go_package = "api/common/v1;commonv1"; 
 
-message BaseRequest {}
+import "validate/v1/validate.proto";
+
+message BaseRequest {
+    string request_date_time = 1 [(validate.rules).string = {
+      min_len: 1,
+      pattern: "^(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{2}Z)$"
+    }];
+  
+    string request_id = 2 [(validate.rules).string = {uuid: true}];
+  
+    string language = 3 [(validate.rules).string = {min_len: 1}];
+  
+    string user_agent = 4 [(validate.rules).string = {min_len: 1}];
+}
+  

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package rongstore.v1;
+option go_package = "api/rongstore/v1;rongstorev1"; 
+
+import "common/v1/base_response.proto";
+import "rongstore/v1/resources/store_owner.proto";
+
+
+service RongStoreService {
+    rpc StoreOwnerMutate(StoreOwnerMutateRequest) returns (common.v1.BaseResponse);
+}

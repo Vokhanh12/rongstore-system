@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package rongstore.v1;
+option go_package = "api/rongstore/v1;rongstorev1"; 
+
+import "validate/v1/validate.proto";
+
+message StoreOwner {
+  // @gotags: gorm:"column:KHOA"
+  string order_id = 1;
+
+  // @gotags: gorm:"column:Stt"
+  int32 line_number = 2;
+
+  // @gotags: gorm:"column:MaVT"
+  string product_code = 3;
+
+  // @gotags: gorm:"column:TenVT"
+  string product_name = 4;
+
+  // @gotags: gorm:"column:Dvt"
+  string unit = 5;
+
+  // @gotags: gorm:"column:SoLuong"
+  float quantity = 6;
+
+  // @gotags: gorm:"column:DonGia"
+  float price = 7;
+
+  // @gotags: gorm:"column:ThanhTien"
+  float total_amount = 8;
+
+  // @gotags: gorm:"column:ThanhToanTinhThue"
+  float tax_included_amount = 9;
+
+  // @gotags: gorm:"column:LoaiThue"
+  string tax_type = 10;
+
+  // @gotags: gorm:"column:ThueSuat"
+  float tax_rate = 11;
+
+  // @gotags: gorm:"column:GhiChu"
+  string description = 12;
+
+  // @gotags: gorm:"column:NhanVienCKMH"
+  int32 staff_id = 13;
+
+  // @gotags: gorm:"column:CREATE_BY"
+  int32 create_by = 14;
+
+  // @gotags: gorm:"column:UPDATE_BY"
+  int32 update_by = 15;
+
+  // @gotags: gorm:"column:CREATE_DATE"
+  string create_date = 16;
+
+  // @gotags: gorm:"column:UPDATE_DATE"
+  string update_date = 17;
+
+  // @gotags: gorm:"column:Ngay"
+  string date = 18;
+}
+
+message StoreOwnerMutateRequest {
+  message StoreOwnerMutateOneOf {
+    oneof mutation {
+      option (validate.required) = true;
+
+      StoreOwner create = 1;
+
+      StoreOwner update = 2;
+
+      StoreOwner delete = 3;
+    }
+  }
+
+  message StoreOwnerMutateRequestData {
+    repeated StoreOwnerMutateOneOf mutations = 1 [(validate.rules).repeated = {min_items: 1}];
+  }
+
+  StoreOwnerMutateRequestData data = 1 [(validate.rules).message = {required: true}];
+}

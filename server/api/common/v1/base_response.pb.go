@@ -114,11 +114,107 @@ func (x *BaseResponse) GetDetails() map[string]string {
 	return nil
 }
 
+type MutateResponse struct {
+	state         protoimpl.MessageState             `protogen:"open.v1"`
+	Metadata      *BaseResponse                      `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Data          *MutateResponse_MutateResponseData `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MutateResponse) Reset() {
+	*x = MutateResponse{}
+	mi := &file_common_v1_base_response_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MutateResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MutateResponse) ProtoMessage() {}
+
+func (x *MutateResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_common_v1_base_response_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MutateResponse.ProtoReflect.Descriptor instead.
+func (*MutateResponse) Descriptor() ([]byte, []int) {
+	return file_common_v1_base_response_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *MutateResponse) GetMetadata() *BaseResponse {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+func (x *MutateResponse) GetData() *MutateResponse_MutateResponseData {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type MutateResponse_MutateResponseData struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MutateResult  []*MutateResult        `protobuf:"bytes,1,rep,name=mutate_result,json=mutateResult,proto3" json:"mutate_result,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MutateResponse_MutateResponseData) Reset() {
+	*x = MutateResponse_MutateResponseData{}
+	mi := &file_common_v1_base_response_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MutateResponse_MutateResponseData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MutateResponse_MutateResponseData) ProtoMessage() {}
+
+func (x *MutateResponse_MutateResponseData) ProtoReflect() protoreflect.Message {
+	mi := &file_common_v1_base_response_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MutateResponse_MutateResponseData.ProtoReflect.Descriptor instead.
+func (*MutateResponse_MutateResponseData) Descriptor() ([]byte, []int) {
+	return file_common_v1_base_response_proto_rawDescGZIP(), []int{1, 0}
+}
+
+func (x *MutateResponse_MutateResponseData) GetMutateResult() []*MutateResult {
+	if x != nil {
+		return x.MutateResult
+	}
+	return nil
+}
+
 var File_common_v1_base_response_proto protoreflect.FileDescriptor
 
 const file_common_v1_base_response_proto_rawDesc = "" +
 	"\n" +
-	"\x1dcommon/v1/base_response.proto\x12\tcommon.v1\x1a\x19google/protobuf/any.proto\x1a\x18common/v1/metadata.proto\x1a\x15common/v1/error.proto\x1a\x1acommon/v1/pagination.proto\x1a\x17common/v1/warning.proto\"\x8e\x03\n" +
+	"\x1dcommon/v1/base_response.proto\x12\tcommon.v1\x1a\x19google/protobuf/any.proto\x1a\x18common/v1/metadata.proto\x1a\x15common/v1/error.proto\x1a\x1acommon/v1/pagination.proto\x1a\x17common/v1/warning.proto\x1a\x1dcommon/v1/mutate_result.proto\"\x8e\x03\n" +
 	"\fBaseResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12(\n" +
 	"\x04data\x18\x02 \x01(\v2\x14.google.protobuf.AnyR\x04data\x12/\n" +
@@ -131,7 +227,12 @@ const file_common_v1_base_response_proto_rawDesc = "" +
 	"\adetails\x18\a \x03(\v2$.common.v1.BaseResponse.DetailsEntryR\adetails\x1a:\n" +
 	"\fDetailsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18Z\x16api/common/v1;commonv1b\x06proto3"
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xdb\x01\n" +
+	"\x0eMutateResponse\x123\n" +
+	"\bmetadata\x18\x01 \x01(\v2\x17.common.v1.BaseResponseR\bmetadata\x12@\n" +
+	"\x04data\x18\x02 \x01(\v2,.common.v1.MutateResponse.MutateResponseDataR\x04data\x1aR\n" +
+	"\x12MutateResponseData\x12<\n" +
+	"\rmutate_result\x18\x01 \x03(\v2\x17.common.v1.MutateResultR\fmutateResultB\x18Z\x16api/common/v1;commonv1b\x06proto3"
 
 var (
 	file_common_v1_base_response_proto_rawDescOnce sync.Once
@@ -145,28 +246,34 @@ func file_common_v1_base_response_proto_rawDescGZIP() []byte {
 	return file_common_v1_base_response_proto_rawDescData
 }
 
-var file_common_v1_base_response_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_common_v1_base_response_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_common_v1_base_response_proto_goTypes = []any{
-	(*BaseResponse)(nil), // 0: common.v1.BaseResponse
-	nil,                  // 1: common.v1.BaseResponse.DetailsEntry
-	(*anypb.Any)(nil),    // 2: google.protobuf.Any
-	(*Metadata)(nil),     // 3: common.v1.Metadata
-	(*Error)(nil),        // 4: common.v1.Error
-	(*Pagination)(nil),   // 5: common.v1.Pagination
-	(*Warning)(nil),      // 6: common.v1.Warning
+	(*BaseResponse)(nil),   // 0: common.v1.BaseResponse
+	(*MutateResponse)(nil), // 1: common.v1.MutateResponse
+	nil,                    // 2: common.v1.BaseResponse.DetailsEntry
+	(*MutateResponse_MutateResponseData)(nil), // 3: common.v1.MutateResponse.MutateResponseData
+	(*anypb.Any)(nil),                         // 4: google.protobuf.Any
+	(*Metadata)(nil),                          // 5: common.v1.Metadata
+	(*Error)(nil),                             // 6: common.v1.Error
+	(*Pagination)(nil),                        // 7: common.v1.Pagination
+	(*Warning)(nil),                           // 8: common.v1.Warning
+	(*MutateResult)(nil),                      // 9: common.v1.MutateResult
 }
 var file_common_v1_base_response_proto_depIdxs = []int32{
-	2, // 0: common.v1.BaseResponse.data:type_name -> google.protobuf.Any
-	3, // 1: common.v1.BaseResponse.metadata:type_name -> common.v1.Metadata
-	4, // 2: common.v1.BaseResponse.error:type_name -> common.v1.Error
-	5, // 3: common.v1.BaseResponse.pagination:type_name -> common.v1.Pagination
-	6, // 4: common.v1.BaseResponse.warnings:type_name -> common.v1.Warning
-	1, // 5: common.v1.BaseResponse.details:type_name -> common.v1.BaseResponse.DetailsEntry
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	4, // 0: common.v1.BaseResponse.data:type_name -> google.protobuf.Any
+	5, // 1: common.v1.BaseResponse.metadata:type_name -> common.v1.Metadata
+	6, // 2: common.v1.BaseResponse.error:type_name -> common.v1.Error
+	7, // 3: common.v1.BaseResponse.pagination:type_name -> common.v1.Pagination
+	8, // 4: common.v1.BaseResponse.warnings:type_name -> common.v1.Warning
+	2, // 5: common.v1.BaseResponse.details:type_name -> common.v1.BaseResponse.DetailsEntry
+	0, // 6: common.v1.MutateResponse.metadata:type_name -> common.v1.BaseResponse
+	3, // 7: common.v1.MutateResponse.data:type_name -> common.v1.MutateResponse.MutateResponseData
+	9, // 8: common.v1.MutateResponse.MutateResponseData.mutate_result:type_name -> common.v1.MutateResult
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_common_v1_base_response_proto_init() }
@@ -178,13 +285,14 @@ func file_common_v1_base_response_proto_init() {
 	file_common_v1_error_proto_init()
 	file_common_v1_pagination_proto_init()
 	file_common_v1_warning_proto_init()
+	file_common_v1_mutate_result_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_common_v1_base_response_proto_rawDesc), len(file_common_v1_base_response_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -7,7 +7,7 @@
 package iamv1
 
 import (
-	v1 "server/api/common/v1"
+	v1 "api/common/v1"
 	context "context"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"

@@ -7,6 +7,7 @@
 package commonv1
 
 import (
+	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -22,9 +23,13 @@ const (
 )
 
 type BaseRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	RequestDateTime string                 `protobuf:"bytes,1,opt,name=request_date_time,json=requestDateTime,proto3" json:"request_date_time,omitempty"`
+	RequestId       string                 `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	Language        string                 `protobuf:"bytes,3,opt,name=language,proto3" json:"language,omitempty"`
+	UserAgent       string                 `protobuf:"bytes,4,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *BaseRequest) Reset() {
@@ -57,12 +62,46 @@ func (*BaseRequest) Descriptor() ([]byte, []int) {
 	return file_common_v1_base_request_proto_rawDescGZIP(), []int{0}
 }
 
+func (x *BaseRequest) GetRequestDateTime() string {
+	if x != nil {
+		return x.RequestDateTime
+	}
+	return ""
+}
+
+func (x *BaseRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *BaseRequest) GetLanguage() string {
+	if x != nil {
+		return x.Language
+	}
+	return ""
+}
+
+func (x *BaseRequest) GetUserAgent() string {
+	if x != nil {
+		return x.UserAgent
+	}
+	return ""
+}
+
 var File_common_v1_base_request_proto protoreflect.FileDescriptor
 
 const file_common_v1_base_request_proto_rawDesc = "" +
 	"\n" +
-	"\x1ccommon/v1/base_request.proto\x12\tcommon.v1\"\r\n" +
-	"\vBaseRequestB\x18Z\x16api/common/v1;commonv1b\x06proto3"
+	"\x1ccommon/v1/base_request.proto\x12\tcommon.v1\x1a\x1avalidate/v1/validate.proto\"\xe9\x01\n" +
+	"\vBaseRequest\x12d\n" +
+	"\x11request_date_time\x18\x01 \x01(\tB8\xfaB5r3\x10\x012/^(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{2}Z)$R\x0frequestDateTime\x12'\n" +
+	"\n" +
+	"request_id\x18\x02 \x01(\tB\b\xfaB\x05r\x03\xb0\x01\x01R\trequestId\x12#\n" +
+	"\blanguage\x18\x03 \x01(\tB\a\xfaB\x04r\x02\x10\x01R\blanguage\x12&\n" +
+	"\n" +
+	"user_agent\x18\x04 \x01(\tB\a\xfaB\x04r\x02\x10\x01R\tuserAgentB\x18Z\x16api/common/v1;commonv1b\x06proto3"
 
 var (
 	file_common_v1_base_request_proto_rawDescOnce sync.Once

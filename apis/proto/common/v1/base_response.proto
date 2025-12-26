@@ -7,6 +7,7 @@ import "common/v1/metadata.proto";
 import "common/v1/error.proto";
 import "common/v1/pagination.proto";
 import "common/v1/warning.proto";
+import "common/v1/mutate_result.proto";
 
 message BaseResponse {
   bool success = 1;
@@ -16,4 +17,15 @@ message BaseResponse {
   Pagination pagination = 5;     
   repeated Warning warnings = 6; 
   map<string, string> details = 7; 
+}
+
+
+message MutateResponse {
+  message MutateResponseData {
+    repeated MutateResult mutate_result = 1;
+  }
+
+  BaseResponse metadata = 1;
+
+  MutateResponseData data = 2;
 }
