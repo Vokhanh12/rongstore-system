@@ -23,8 +23,11 @@ const (
 
 type MutateResult struct {
 	state           protoimpl.MessageState              `protogen:"open.v1"`
-	Name            string                              `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	MutateOperation MutateOperation_MutateOperationEnum `protobuf:"varint,2,opt,name=mutate_operation,json=mutateOperation,proto3,enum=common.v1.MutateOperation_MutateOperationEnum" json:"mutate_operation,omitempty"`
+	Success         bool                                `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Name            string                              `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	MutateOperation MutateOperation_MutateOperationEnum `protobuf:"varint,3,opt,name=mutate_operation,json=mutateOperation,proto3,enum=common.v1.MutateOperation_MutateOperationEnum" json:"mutate_operation,omitempty"`
+	Error           *Error                              `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	Details         map[string]string                   `protobuf:"bytes,5,rep,name=details,proto3" json:"details,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -59,6 +62,13 @@ func (*MutateResult) Descriptor() ([]byte, []int) {
 	return file_common_v1_mutate_result_proto_rawDescGZIP(), []int{0}
 }
 
+func (x *MutateResult) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
 func (x *MutateResult) GetName() string {
 	if x != nil {
 		return x.Name
@@ -73,14 +83,34 @@ func (x *MutateResult) GetMutateOperation() MutateOperation_MutateOperationEnum 
 	return MutateOperation_UNSPECIFIED
 }
 
+func (x *MutateResult) GetError() *Error {
+	if x != nil {
+		return x.Error
+	}
+	return nil
+}
+
+func (x *MutateResult) GetDetails() map[string]string {
+	if x != nil {
+		return x.Details
+	}
+	return nil
+}
+
 var File_common_v1_mutate_result_proto protoreflect.FileDescriptor
 
 const file_common_v1_mutate_result_proto_rawDesc = "" +
 	"\n" +
-	"\x1dcommon/v1/mutate_result.proto\x12\tcommon.v1\x1a common/v1/mutate_operation.proto\"}\n" +
-	"\fMutateResult\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12Y\n" +
-	"\x10mutate_operation\x18\x02 \x01(\x0e2..common.v1.MutateOperation.MutateOperationEnumR\x0fmutateOperationB\x18Z\x16api/common/v1;commonv1b\x06proto3"
+	"\x1dcommon/v1/mutate_result.proto\x12\tcommon.v1\x1a common/v1/mutate_operation.proto\x1a\x15common/v1/error.proto\"\xbb\x02\n" +
+	"\fMutateResult\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12Y\n" +
+	"\x10mutate_operation\x18\x03 \x01(\x0e2..common.v1.MutateOperation.MutateOperationEnumR\x0fmutateOperation\x12&\n" +
+	"\x05error\x18\x04 \x01(\v2\x10.common.v1.ErrorR\x05error\x12>\n" +
+	"\adetails\x18\x05 \x03(\v2$.common.v1.MutateResult.DetailsEntryR\adetails\x1a:\n" +
+	"\fDetailsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18Z\x16api/common/v1;commonv1b\x06proto3"
 
 var (
 	file_common_v1_mutate_result_proto_rawDescOnce sync.Once
@@ -94,18 +124,22 @@ func file_common_v1_mutate_result_proto_rawDescGZIP() []byte {
 	return file_common_v1_mutate_result_proto_rawDescData
 }
 
-var file_common_v1_mutate_result_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_common_v1_mutate_result_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_common_v1_mutate_result_proto_goTypes = []any{
 	(*MutateResult)(nil),                     // 0: common.v1.MutateResult
-	(MutateOperation_MutateOperationEnum)(0), // 1: common.v1.MutateOperation.MutateOperationEnum
+	nil,                                      // 1: common.v1.MutateResult.DetailsEntry
+	(MutateOperation_MutateOperationEnum)(0), // 2: common.v1.MutateOperation.MutateOperationEnum
+	(*Error)(nil),                            // 3: common.v1.Error
 }
 var file_common_v1_mutate_result_proto_depIdxs = []int32{
-	1, // 0: common.v1.MutateResult.mutate_operation:type_name -> common.v1.MutateOperation.MutateOperationEnum
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	2, // 0: common.v1.MutateResult.mutate_operation:type_name -> common.v1.MutateOperation.MutateOperationEnum
+	3, // 1: common.v1.MutateResult.error:type_name -> common.v1.Error
+	1, // 2: common.v1.MutateResult.details:type_name -> common.v1.MutateResult.DetailsEntry
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_common_v1_mutate_result_proto_init() }
@@ -114,13 +148,14 @@ func file_common_v1_mutate_result_proto_init() {
 		return
 	}
 	file_common_v1_mutate_operation_proto_init()
+	file_common_v1_error_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_common_v1_mutate_result_proto_rawDesc), len(file_common_v1_mutate_result_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

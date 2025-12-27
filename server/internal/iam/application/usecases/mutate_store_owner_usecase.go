@@ -1,77 +1,156 @@
 package usecases
 
-// import (
-// 	"context"
-// 	"regexp"
-// 	iamv1 "server/api/iam/v1"
-// 	"server/internal/iam/domain"
-// 	rp "server/internal/iam/domain/repositories"
-// 	sv "server/internal/iam/domain/services"
-// 	"server/pkg/errors"
-// 	"strings"
-// )
+import (
+	"context"
+	commonv1 "server/api/common/v1"
+	resourcesv1 "server/api/rongstore/v1/resources"
+	rp "server/internal/iam/domain/repositories"
+	sv "server/internal/iam/domain/services"
+	"server/pkg/errors"
+)
 
-// type MutateStoreOwnerCommand struct {
-// 	Email    string
-// 	Password string
-// }
+type MutationType int
 
-// type MutateStoreOwnerResult struct {
-// 	AccessToken  string
-// 	RefreshToken string
-// }
+const (
+	MutationCreate MutationType = iota
+	MutationUpdate
+	MutationDelete
+)
 
-// func MapMutateStoreOwnerRequestToCommand(req *iamv1.MutateStoreOwnerRequest) MutateStoreOwnerCommand {
-// 	return MutateStoreOwnerCommand{
-// 		Email:    req.Email,
-// 		Password: req.Password,
-// 	}
-// }
+type StoreOwner struct {
+	OrderID     string
+	LineNumber  int32
+	ProductCode string
+	ProductName string
+}
 
-// func MapMutateStoreOwnerResultToResponseDTO(result *MutateStoreOwnerResult) iamv1.MutateStoreOwnerResponse {
-// 	return iamv1.MutateStoreOwnerResponse{
-// 		AccessToken:  result.AccessToken,
-// 		RefreshToken: result.RefreshToken,
-// 	}
-// }
+type StoreOwnerMutateItem struct {
+	Type  MutationType
+	Value StoreOwner
+}
 
-// type MutateStoreOwnerUsecase struct {
-// 	UserRepo rp.UserRepository
-// 	Keycloak sv.Keycloak
-// }
+type StoreOwnerMutateCommand struct {
+	Items []StoreOwnerMutateItem
+}
 
-// func NewMutateStoreOwnerUsecase(repo rp.UserRepository, kcl sv.Keycloak) *MutateStoreOwnerUsecase {
-// 	return &MutateStoreOwnerUsecase{
-// 		UserRepo: repo,
-// 		Keycloak: kcl,
-// 	}
-// }
+type MutateResultItem struct {
+	Success bool
+	Name    string
+	Code    string
+	Error   errors.AppError
+	Details map[string]string
+}
 
-// func (u *MutateStoreOwnerUsecase) Execute(ctx context.Context, cmd MutateStoreOwnerCommand) (*MutateStoreOwnerResult, *errors.AppError) {
-// 	if cmd.Email == "" {
-// 		return nil, errors.New(domain.MutateStoreOwner_EMAIL_EMPTY)
-// 	}
+type StoreOwnerMutateResult struct {
+	Items []MutateResultItem
+}
 
-// 	emailRegex := `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
-// 	if matched, _ := regexp.MatchString(emailRegex, cmd.Email); !matched {
-// 		return nil, errors.New(domain.MutateStoreOwner_EMAIL_INVALID)
-// 	}
+func mapStoreOwner(p *resourcesv1.StoreOwner) StoreOwner {
+	return StoreOwner{
+		OrderID:     p.OrderId,
+		LineNumber:  p.LineNumber,
+		ProductCode: p.ProductCode,
+		ProductName: p.ProductName,
+	}
+}
 
-// 	if cmd.Password == "" {
-// 		return nil, errors.New(domain.MutateStoreOwner_PASSWORD_EMPTY)
-// 	}
+func MapStoreOwnerMutateRequestToCommand(
+	req *resourcesv1.StoreOwnerMutateRequest,
+) StoreOwnerMutateCommand {
 
-// 	token, err := u.Keycloak.GetToken(ctx, cmd.Email, cmd.Password)
+	items := make([]StoreOwnerMutateItem, 0)
 
-// 	if err != nil {
-// 		if strings.Contains(err.Error(), "invalid_grant") || strings.Contains(err.Error(), "invalid_credentials") {
-// 			return nil, errors.New(domain.INVALID_CREDENTIALS)
-// 		}
-// 		return nil, err
-// 	}
+	for _, m := range req.Data.Mutations {
+		switch v := m.Mutation.(type) {
 
-// 	return &MutateStoreOwnerResult{
-// 		AccessToken:  token.AccessToken,
-// 		RefreshToken: token.RefreshToken,
-// 	}, nil
-// }
+		case *resourcesv1.StoreOwnerMutateRequest_StoreOwnerMutateOneOf_Create:
+			items = append(items, StoreOwnerMutateItem{
+				Type:  MutationCreate,
+				Value: mapStoreOwner(v.Create),
+			})
+
+		case *resourcesv1.StoreOwnerMutateRequest_StoreOwnerMutateOneOf_Update:
+			items = append(items, StoreOwnerMutateItem{
+				Type:  MutationUpdate,
+				Value: mapStoreOwner(v.Update),
+			})
+
+		case *resourcesv1.StoreOwnerMutateRequest_StoreOwnerMutateOneOf_Delete:
+			items = append(items, StoreOwnerMutateItem{
+				Type:  MutationDelete,
+				Value: mapStoreOwner(v.Delete),
+			})
+		}
+	}
+
+	return StoreOwnerMutateCommand{Items: items}
+}
+
+func MapStoreOwnerMutateResultToResponseDTO(
+	result *StoreOwnerMutateResult,
+) *commonv1.MutateResponse {
+
+	items := make([]*commonv1.MutateResult, 0, len(result.Items))
+
+	for _, item := range result.Items {
+		items = append(items, &commonv1.MutateResult{
+			Success: item.Success,
+			Name:    item.Name,
+			Error:   MapAppErrorToProto(item.Error),
+			Details: item.Details,
+		})
+	}
+
+	return &commonv1.MutateResponse{
+		Data: &commonv1.MutateResponse_MutateResponseData{
+			MutateResult: items,
+		},
+	}
+}
+
+type StoreOwnerMutateUsecase struct {
+	UserRepo rp.UserRepository
+	Keycloak sv.Keycloak
+}
+
+func NewMutateStoreOwnerUsecase(repo rp.UserRepository, kcl sv.Keycloak) *StoreOwnerMutateUsecase {
+	return &StoreOwnerMutateUsecase{
+		UserRepo: repo,
+		Keycloak: kcl,
+	}
+}
+
+func (u *StoreOwnerMutateUsecase) Execute(ctx context.Context, cmd StoreOwnerMutateCommand) (*StoreOwnerMutateResult, *errors.AppError) {
+
+	results := make([]MutateResultItem, 0)
+
+	for _, item := range cmd.Items {
+		var (
+			err error
+			id  string
+		)
+
+		switch item.Type {
+
+		case MutationCreate:
+			id, err = u.Repo.Create(ctx, item.Value)
+
+		case MutationUpdate:
+			err = u.Repo.Update(ctx, item.Value)
+			id = item.Value.OrderID
+
+		case MutationDelete:
+			err = u.Repo.Delete(ctx, item.Value)
+			id = item.Value.OrderID
+		}
+
+		results = append(results, MutateResultItem{
+			Name: id,
+			Code: errors.ParseError(err).Error(),
+		})
+	}
+
+	return &StoreOwnerMutateResult{
+		Items: results,
+	}, nil
+}

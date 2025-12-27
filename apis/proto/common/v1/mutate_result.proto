@@ -4,9 +4,12 @@ package common.v1;
 option go_package = "api/common/v1;commonv1"; 
 
 import "common/v1/mutate_operation.proto";
+import "common/v1/error.proto";
 
 message MutateResult {
-  string name = 1;
-
-  MutateOperation.MutateOperationEnum mutate_operation = 2;
+  bool success = 1;
+  string name = 2;
+  MutateOperation.MutateOperationEnum mutate_operation = 3;
+  Error error = 4;               
+  map<string, string> details = 5;
 }

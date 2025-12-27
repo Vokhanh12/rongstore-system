@@ -116,7 +116,7 @@ func (x *BaseResponse) GetDetails() map[string]string {
 
 type MutateResponse struct {
 	state         protoimpl.MessageState             `protogen:"open.v1"`
-	Metadata      *BaseResponse                      `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Metadata      *Metadata                          `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	Data          *MutateResponse_MutateResponseData `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -152,7 +152,7 @@ func (*MutateResponse) Descriptor() ([]byte, []int) {
 	return file_common_v1_base_response_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *MutateResponse) GetMetadata() *BaseResponse {
+func (x *MutateResponse) GetMetadata() *Metadata {
 	if x != nil {
 		return x.Metadata
 	}
@@ -227,9 +227,9 @@ const file_common_v1_base_response_proto_rawDesc = "" +
 	"\adetails\x18\a \x03(\v2$.common.v1.BaseResponse.DetailsEntryR\adetails\x1a:\n" +
 	"\fDetailsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xdb\x01\n" +
-	"\x0eMutateResponse\x123\n" +
-	"\bmetadata\x18\x01 \x01(\v2\x17.common.v1.BaseResponseR\bmetadata\x12@\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd7\x01\n" +
+	"\x0eMutateResponse\x12/\n" +
+	"\bmetadata\x18\x01 \x01(\v2\x13.common.v1.MetadataR\bmetadata\x12@\n" +
 	"\x04data\x18\x02 \x01(\v2,.common.v1.MutateResponse.MutateResponseDataR\x04data\x1aR\n" +
 	"\x12MutateResponseData\x12<\n" +
 	"\rmutate_result\x18\x01 \x03(\v2\x17.common.v1.MutateResultR\fmutateResultB\x18Z\x16api/common/v1;commonv1b\x06proto3"
@@ -266,7 +266,7 @@ var file_common_v1_base_response_proto_depIdxs = []int32{
 	7, // 3: common.v1.BaseResponse.pagination:type_name -> common.v1.Pagination
 	8, // 4: common.v1.BaseResponse.warnings:type_name -> common.v1.Warning
 	2, // 5: common.v1.BaseResponse.details:type_name -> common.v1.BaseResponse.DetailsEntry
-	0, // 6: common.v1.MutateResponse.metadata:type_name -> common.v1.BaseResponse
+	5, // 6: common.v1.MutateResponse.metadata:type_name -> common.v1.Metadata
 	3, // 7: common.v1.MutateResponse.data:type_name -> common.v1.MutateResponse.MutateResponseData
 	9, // 8: common.v1.MutateResponse.MutateResponseData.mutate_result:type_name -> common.v1.MutateResult
 	9, // [9:9] is the sub-list for method output_type

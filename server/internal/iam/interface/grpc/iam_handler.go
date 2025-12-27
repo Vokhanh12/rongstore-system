@@ -5,8 +5,10 @@ import (
 
 	commonv1 "server/api/common/v1"
 	iamv1 "server/api/iam/v1"
+	rongstorev1 "server/api/rongstore/v1/resources"
 
-	usecases "server/internal/iam/application/usecases"
+	ucsiam "server/internal/iam/application/usecases"
+	ucsrongstore "server/internal/iam/application/usecases"
 
 	"server/pkg/logger"
 	reshelper "server/pkg/util/response_helper"
@@ -14,22 +16,25 @@ import (
 
 type IamHandler struct {
 	iamv1.UnimplementedIamServiceServer
-	loginUsecase     *usecases.LoginUsecase
-	handshakeUsecase *usecases.HandshakeUsecase
+	loginUsecase            *ucsiam.LoginUsecase
+	handshakeUsecase        *ucsiam.HandshakeUsecase
+	storeOwnerMutateUsecase *ucsiam.StoreOwnerMutateUsecase
 }
 
 func NewIamHandler(
-	loginUsecase *usecases.LoginUsecase,
-	handshakeUsecase *usecases.HandshakeUsecase,
+	loginUsecase *ucsiam.LoginUsecase,
+	handshakeUsecase *ucsiam.HandshakeUsecase,
+	storeOwnerMutateUsecase *ucsiam.StoreOwnerMutateUsecase,
 ) *IamHandler {
 	return &IamHandler{
-		loginUsecase:     loginUsecase,
-		handshakeUsecase: handshakeUsecase,
+		loginUsecase:            loginUsecase,
+		handshakeUsecase:        handshakeUsecase,
+		storeOwnerMutateUsecase: storeOwnerMutateUsecase,
 	}
 }
 
 func (h *IamHandler) Login(ctx context.Context, req *iamv1.LoginRequest) (*commonv1.BaseResponse, error) {
-	cmd := usecases.MapLoginRequestToCommand(req)
+	cmd := ucsiam.MapLoginRequestToCommand(req)
 
 	result, err := h.loginUsecase.Execute(ctx, cmd)
 	if err != nil {
@@ -39,12 +44,12 @@ func (h *IamHandler) Login(ctx context.Context, req *iamv1.LoginRequest) (*commo
 		return reshelper.BuildErrorResponse(ctx, err), nil
 	}
 
-	resDTO := usecases.MapLoginResultToResponseDTO(result)
+	resDTO := ucsiam.MapLoginResultToResponseDTO(result)
 	return reshelper.BuildSuccessResponse(ctx, &resDTO)
 }
 
 func (h *IamHandler) Handshake(ctx context.Context, req *iamv1.HandshakeRequest) (*commonv1.BaseResponse, error) {
-	cmd := usecases.MapHandshakeRequestToCommand(req)
+	cmd := ucsiam.MapHandshakeRequestToCommand(req)
 
 	result, err := h.handshakeUsecase.Execute(ctx, cmd)
 	if err != nil {
@@ -54,6 +59,21 @@ func (h *IamHandler) Handshake(ctx context.Context, req *iamv1.HandshakeRequest)
 		return reshelper.BuildErrorResponse(ctx, err), nil
 	}
 
-	resDTO := usecases.MapHandshakeResultToResponseDTO(result)
+	resDTO := ucsiam.MapHandshakeResultToResponseDTO(result)
 	return reshelper.BuildSuccessResponse(ctx, &resDTO)
+}
+
+func (h *IamHandler) StoreOwnerMutate(ctx context.Context, req *rongstorev1.StoreOwnerMutateRequest) (*commonv1.MutateResponse, error) {
+
+	cmd := ucsrongstore.MapStoreOwnerMutateRequestToCommand(req)
+
+	result, err := h.storeOwnerMutateUsecase.Execute(ctx, cmd)
+	if err != nil {
+		logger.LogBySeverity(ctx, "iam_handler.store_owner_mutate", err)
+		return reshelper.BuildErrorResponse(ctx, err), nil
+	}
+
+	resDTO := ucsrongstore.MapStoreOwnerMutateResultToResponseDTO(result)
+
+	return &resDTO, nil
 }
